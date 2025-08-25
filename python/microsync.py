@@ -904,194 +904,56 @@ class SyncDevice(object):
             events.append(e)
         return events
 
-    class _EventVisualizer:
-        """Helper class for visualizing events in matplotlib."""
-        
-        # Configuration constants
-        STATE_EVENTS = {'SET_PIN', 'TGL_PIN', 'EN__PIN', 'DIS_PIN', 'OPE_SHU', 'CLS_SHU', 'BST__ON', 'BST_OFF'}
-        ACTIVE_STATES = {
-            'SET_PIN': lambda e: e.arg2 == 1, 
-            'TGL_PIN': lambda e: True, 
-            'EN__PIN': lambda e: True,
-            'DIS_PIN': lambda e: False, 
-            'OPE_SHU': lambda e: True, 
-            'CLS_SHU': lambda e: False,
-            'BST__ON': lambda e: True, 
-            'BST_OFF': lambda e: False
-        }
-        TYPE_PRIORITY = {'SET_PIN': 1, 'TGL_PIN': 2, 'Enabled': 3, 'Shutter': 4, 'Burst': 5}
-        BOX_HEIGHT, BOX_Y_OFFSET = 0.6, 0.3
-        INFINITE_EXTENSION = 1e9
-        
-        def __init__(self, ax, shutter_delay=1000):
-            self.ax = ax
-            self.shutter_delay = shutter_delay
-        
-        def create_rectangle(self, x, y, width, color='grey', hatch=None):
-            """Create a rectangle patch with consistent styling."""
-            import matplotlib.patches as patches
-            return patches.Rectangle(
-                (x, y - self.BOX_Y_OFFSET), width, self.BOX_HEIGHT,
-                linewidth=1, edgecolor='black', facecolor=color, alpha=0.7, hatch=hatch
-            )
-        
-        def get_group_name(self, event):
-            """Get the group name for an event based on its function type."""
-            try:
-                pin_name = event.arg1 if isinstance(event.arg1, str) else rev_pin_map[event.arg1]
-            except KeyError:
-                # Fallback for unknown pin numbers
-                pin_name = f"Pin{event.arg1}"
-            
-            if event.func in ['SET_PIN', 'TGL_PIN']:
-                return f"{event.func}({pin_name})"
-            elif event.func in ['EN__PIN', 'DIS_PIN']:
-                return f"Enabled({pin_name})"
-            elif event.func in ['OPE_SHU', 'CLS_SHU']:
-                return "Shutter"
-            elif event.func in ['BST__ON', 'BST_OFF']:
-                return "Burst"
-            return event.func
-        
-        def get_sort_key(self, group_name):
-            """Get sorting key for group names with proper pin sorting."""
-            import re
-            if '(' in group_name and ')' in group_name:
-                event_type, pin_name = group_name.split('(')[0], group_name.split('(')[1].rstrip(')')
-                priority = self.TYPE_PRIORITY.get(event_type, 999)
-                
-                # Natural pin sorting
-                match = re.match(r'([A-Za-z]+)(\d*)', pin_name)
-                pin_key = (match.group(1), int(match.group(2) or 0)) if match else (pin_name, 0)
-                return (priority, pin_key)
-            else:
-                return (self.TYPE_PRIORITY.get(group_name, 999), group_name)
-        
-        def is_active_state(self, event):
-            """Determine if an event represents an active state."""
-            return self.ACTIVE_STATES.get(event.func, lambda e: True)(event)
-        
-        def plot_shutter_event(self, event, start_time, end_time, y_pos, color):
-            """Plot a shutter event with transient state visualization."""
-            duration = end_time - start_time
-            if duration <= self.shutter_delay:
-                # Entire duration is transient
-                self.ax.add_patch(self.create_rectangle(start_time, y_pos, duration, color, hatch='///'))
-            else:
-                # Transient period (hatched) + full period (solid)
-                self.ax.add_patch(self.create_rectangle(start_time, y_pos, self.shutter_delay, color, hatch='///'))
-                self.ax.add_patch(self.create_rectangle(start_time + self.shutter_delay, y_pos, 
-                                                      duration - self.shutter_delay, color))
-        
-        def plot_state_events(self, group_events, y_pos, group_name):
-            """Plot state-based events with proper state transitions."""
-            from itertools import chain
-            # Expand and sort all repeating events
-            expanded_events = list(chain.from_iterable(e.expand_repeating_events() for e in group_events))
-            if not expanded_events:
-                return [], []
-            
-            sorted_events = sorted(expanded_events, key=lambda e: e.ts)
-            all_ts, all_ends = [], []
-            current_hatch = '///'
-            
-            for i, event in enumerate(sorted_events):
-                end_time = sorted_events[i + 1].ts if i + 1 < len(sorted_events) else event.ts + self.INFINITE_EXTENSION
-                
-                if event.func == 'TGL_PIN':
-                    # Toggle events use alternating hatch patterns
-                    self.ax.add_patch(self.create_rectangle(event.ts, y_pos, end_time - event.ts, 'grey', current_hatch))
-                    current_hatch = '\\\\\\' if current_hatch == '///' else '///'
-                else:
-                    color = 'grey' if self.is_active_state(event) else 'white'
-                    if group_name == "Shutter" and event.func in ['OPE_SHU', 'CLS_SHU']:
-                        self.plot_shutter_event(event, event.ts, end_time, y_pos, color)
-                    else:
-                        self.ax.add_patch(self.create_rectangle(event.ts, y_pos, end_time - event.ts, color))
-                
-                all_ts.append(event.ts)
-                all_ends.append(end_time)
-            
-            return all_ts, all_ends
-        
-        def plot_non_state_events(self, group_events, y_pos):
-            """Plot non-state events as simple rectangles."""
-            all_ts, all_ends = [], []
-            for event in group_events:
-                for expanded_event in event.expand_repeating_events():
-                    self.ax.add_patch(self.create_rectangle(expanded_event.ts, y_pos, 50, 'grey'))
-                    all_ts.append(expanded_event.ts)
-                    all_ends.append(expanded_event.ts + 50)
-            return all_ts, all_ends
 
-    def show_events(self, figsize=(12, 4), title=None):
+
+    def show_events(self, title=None):
         """
         Retrieve and visualize scheduled events from the device (always in microseconds).
         
         Args:
-            figsize (tuple): Figure size (width, height)
             title (str, optional): Custom title for the plot
         
         Returns:
-            matplotlib.figure.Figure: The generated plot figure
+            bokeh.plotting.figure.Figure: Interactive Bokeh plot
         
         Example:
             >>> fig = sd.show_events()
-            >>> plt.show()
+            >>> # In Jupyter notebook, the plot will be displayed automatically
+            >>> # To save: fig.save_plot("events.html")  # or .png, .svg
         """
-        import matplotlib.pyplot as plt
-        import matplotlib.patches as patches
-        from collections import defaultdict
-        from itertools import chain
-        import re
-        
         # Get events from device (always in microseconds)
         events = self.get_events("us")
         if not events:
             print("No events scheduled on device")
             return None
         
-        # Create figure and visualizer
-        fig, ax = plt.subplots(figsize=figsize)
-        visualizer = self._EventVisualizer(ax, getattr(self, 'shutter_delay_us', 1000))
+        # Import and create visualizer
+        from event_visualizer import EventVisualizer, enable_jupyter_notebook, display_plot
+        visualizer = EventVisualizer(getattr(self, 'shutter_delay_us', 1000))
         
-        # Group and sort events
-        event_groups = defaultdict(list)
-        for event in events:
-            event_groups[visualizer.get_group_name(event)].append(event)
+        # Enable Jupyter notebook output
+        enable_jupyter_notebook()
         
-        # Plot events
-        sorted_groups = sorted(event_groups.items(), key=lambda x: visualizer.get_sort_key(x[0]))
-        y_positions = {name: i for i, (name, _) in enumerate(sorted_groups)}
-        all_timestamps, all_end_times = [], []
+        # Create interactive plot
+        plot = visualizer.create_plot(events, title)
         
-        for group_name, group_events in sorted_groups:
-            y = y_positions[group_name]
-            if group_events and group_events[0].func in visualizer.STATE_EVENTS:
-                ts, ends = visualizer.plot_state_events(group_events, y, group_name)
-            else:
-                ts, ends = visualizer.plot_non_state_events(group_events, y)
-            all_timestamps.extend(ts)
-            all_end_times.extend(ends)
+        # Display the plot in Jupyter
+        display_plot(plot)
         
-        # Setup plot
-        ax.set_ylim(-0.5, len(y_positions) - 0.5)
-        ax.set_yticks(list(y_positions.values()))
-        ax.set_yticklabels(list(y_positions.keys()))
-        ax.set_xlabel('Time (us)')
-        ax.set_title(title or f'Scheduled Events ({len(events)} total)')
-        ax.grid(True, alpha=0.3, axis='x')
+        # Create a wrapper class to add save functionality
+        class PlotWrapper:
+            def __init__(self, plot, visualizer):
+                self.plot = plot
+                self.visualizer = visualizer
+            
+            def save_plot(self, filename, format=None):
+                return self.visualizer.save_plot(self.plot, filename, format)
+            
+            def __getattr__(self, name):
+                # Delegate all other attributes to the original plot
+                return getattr(self.plot, name)
         
-        # Set x-axis limits
-        if all_timestamps:
-            min_ts, max_ts = min(all_timestamps), max(all_timestamps)
-            time_range = max_ts - min_ts if max_ts > min_ts else 1
-            ax.set_xlim(min_ts - time_range * 0.02, max_ts + time_range * 0.2)
-        else:
-            ax.set_xlim(0, 1)
-        
-        plt.tight_layout()
-        return fig
+        return PlotWrapper(plot, visualizer)
 
     ## pTIRF extension
     def open_shutters(self, mask=0):

@@ -47,6 +47,7 @@ The device connects to your computer via UART (115,200 baud). All timing and pin
 - **Priority event queue** with hardware-timed execution
 - **Laser shutter and interlock safety logic**
 - **Support for advanced acquisition modes** (continuous, stroboscopic, ALEX)
+- **Interactive event visualization** with Bokeh (zoom, pan, hover tooltips)
 - **Comprehensive Python API** with logging and context management
 - **Extensive examples and documentation in Jupyter notebook**
 
@@ -283,6 +284,30 @@ The following high-level acquisition modes are provided as convenience functions
 
 - **Get all scheduled events:** `sd.get_events(unit="us"|"ms")`
 - **Check frames left:** `sd.N_frames_left()`
+
+### Interactive Event Visualization
+
+The `show_events()` method provides interactive visualization of scheduled events using Bokeh:
+
+```python
+# Create interactive plot
+plot = sd.show_events()
+
+# In Jupyter notebook, plot displays automatically
+# Save to file
+plot.save_plot("events.html")  # Interactive HTML
+plot.save_plot("events.png")   # Static PNG
+plot.save_plot("events.svg")   # Vector SVG
+```
+
+**Features:**
+- **Interactive zoom and pan** - Examine precise timing details
+- **Hover tooltips** - See exact timestamps and durations
+- **State-based visualization** - Gray boxes show active states (HIGH pins, open shutters)
+- **Transient state indication** - Dashed borders show shutter transition periods
+- **Toggle event patterns** - Alternating line styles for unknown states
+- **Automatic grouping** - Events grouped by type and pin
+- **Natural sorting** - Pins sorted numerically (A1, A2, A12)
 
 ### Timing Configuration
 
