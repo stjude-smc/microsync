@@ -904,6 +904,126 @@ class SyncDevice(object):
             events.append(e)
         return events
 
+    class _EventVisualizer:
+        """Helper class for visualizing events in matplotlib."""
+        
+        # Configuration constants
+        STATE_EVENTS = {'SET_PIN', 'TGL_PIN', 'EN__PIN', 'DIS_PIN', 'OPE_SHU', 'CLS_SHU', 'BST__ON', 'BST_OFF'}
+        ACTIVE_STATES = {
+            'SET_PIN': lambda e: e.arg2 == 1, 
+            'TGL_PIN': lambda e: True, 
+            'EN__PIN': lambda e: True,
+            'DIS_PIN': lambda e: False, 
+            'OPE_SHU': lambda e: True, 
+            'CLS_SHU': lambda e: False,
+            'BST__ON': lambda e: True, 
+            'BST_OFF': lambda e: False
+        }
+        TYPE_PRIORITY = {'SET_PIN': 1, 'TGL_PIN': 2, 'Enabled': 3, 'Shutter': 4, 'Burst': 5}
+        BOX_HEIGHT, BOX_Y_OFFSET = 0.6, 0.3
+        INFINITE_EXTENSION = 1e9
+        
+        def __init__(self, ax, shutter_delay=1000):
+            self.ax = ax
+            self.shutter_delay = shutter_delay
+        
+        def create_rectangle(self, x, y, width, color='grey', hatch=None):
+            """Create a rectangle patch with consistent styling."""
+            import matplotlib.patches as patches
+            return patches.Rectangle(
+                (x, y - self.BOX_Y_OFFSET), width, self.BOX_HEIGHT,
+                linewidth=1, edgecolor='black', facecolor=color, alpha=0.7, hatch=hatch
+            )
+        
+        def get_group_name(self, event):
+            """Get the group name for an event based on its function type."""
+            try:
+                pin_name = event.arg1 if isinstance(event.arg1, str) else rev_pin_map[event.arg1]
+            except KeyError:
+                # Fallback for unknown pin numbers
+                pin_name = f"Pin{event.arg1}"
+            
+            if event.func in ['SET_PIN', 'TGL_PIN']:
+                return f"{event.func}({pin_name})"
+            elif event.func in ['EN__PIN', 'DIS_PIN']:
+                return f"Enabled({pin_name})"
+            elif event.func in ['OPE_SHU', 'CLS_SHU']:
+                return "Shutter"
+            elif event.func in ['BST__ON', 'BST_OFF']:
+                return "Burst"
+            return event.func
+        
+        def get_sort_key(self, group_name):
+            """Get sorting key for group names with proper pin sorting."""
+            import re
+            if '(' in group_name and ')' in group_name:
+                event_type, pin_name = group_name.split('(')[0], group_name.split('(')[1].rstrip(')')
+                priority = self.TYPE_PRIORITY.get(event_type, 999)
+                
+                # Natural pin sorting
+                match = re.match(r'([A-Za-z]+)(\d*)', pin_name)
+                pin_key = (match.group(1), int(match.group(2) or 0)) if match else (pin_name, 0)
+                return (priority, pin_key)
+            else:
+                return (self.TYPE_PRIORITY.get(group_name, 999), group_name)
+        
+        def is_active_state(self, event):
+            """Determine if an event represents an active state."""
+            return self.ACTIVE_STATES.get(event.func, lambda e: True)(event)
+        
+        def plot_shutter_event(self, event, start_time, end_time, y_pos, color):
+            """Plot a shutter event with transient state visualization."""
+            duration = end_time - start_time
+            if duration <= self.shutter_delay:
+                # Entire duration is transient
+                self.ax.add_patch(self.create_rectangle(start_time, y_pos, duration, color, hatch='///'))
+            else:
+                # Transient period (hatched) + full period (solid)
+                self.ax.add_patch(self.create_rectangle(start_time, y_pos, self.shutter_delay, color, hatch='///'))
+                self.ax.add_patch(self.create_rectangle(start_time + self.shutter_delay, y_pos, 
+                                                      duration - self.shutter_delay, color))
+        
+        def plot_state_events(self, group_events, y_pos, group_name):
+            """Plot state-based events with proper state transitions."""
+            from itertools import chain
+            # Expand and sort all repeating events
+            expanded_events = list(chain.from_iterable(e.expand_repeating_events() for e in group_events))
+            if not expanded_events:
+                return [], []
+            
+            sorted_events = sorted(expanded_events, key=lambda e: e.ts)
+            all_ts, all_ends = [], []
+            current_hatch = '///'
+            
+            for i, event in enumerate(sorted_events):
+                end_time = sorted_events[i + 1].ts if i + 1 < len(sorted_events) else event.ts + self.INFINITE_EXTENSION
+                
+                if event.func == 'TGL_PIN':
+                    # Toggle events use alternating hatch patterns
+                    self.ax.add_patch(self.create_rectangle(event.ts, y_pos, end_time - event.ts, 'grey', current_hatch))
+                    current_hatch = '\\\\\\' if current_hatch == '///' else '///'
+                else:
+                    color = 'grey' if self.is_active_state(event) else 'white'
+                    if group_name == "Shutter" and event.func in ['OPE_SHU', 'CLS_SHU']:
+                        self.plot_shutter_event(event, event.ts, end_time, y_pos, color)
+                    else:
+                        self.ax.add_patch(self.create_rectangle(event.ts, y_pos, end_time - event.ts, color))
+                
+                all_ts.append(event.ts)
+                all_ends.append(end_time)
+            
+            return all_ts, all_ends
+        
+        def plot_non_state_events(self, group_events, y_pos):
+            """Plot non-state events as simple rectangles."""
+            all_ts, all_ends = [], []
+            for event in group_events:
+                for expanded_event in event.expand_repeating_events():
+                    self.ax.add_patch(self.create_rectangle(expanded_event.ts, y_pos, 50, 'grey'))
+                    all_ts.append(expanded_event.ts)
+                    all_ends.append(expanded_event.ts + 50)
+            return all_ts, all_ends
+
     def show_events(self, figsize=(12, 4), title=None):
         """
         Retrieve and visualize scheduled events from the device (always in microseconds).
@@ -922,265 +1042,51 @@ class SyncDevice(object):
         import matplotlib.pyplot as plt
         import matplotlib.patches as patches
         from collections import defaultdict
+        from itertools import chain
+        import re
         
         # Get events from device (always in microseconds)
         events = self.get_events("us")
-        
         if not events:
             print("No events scheduled on device")
             return None
         
-        # Create figure and setup
+        # Create figure and visualizer
         fig, ax = plt.subplots(figsize=figsize)
+        visualizer = self._EventVisualizer(ax, getattr(self, 'shutter_delay_us', 1000))
         
-        # Configuration
-        STATE_EVENTS = ['SET_PIN', 'TGL_PIN', 'EN__PIN', 'DIS_PIN', 'OPE_SHU', 'CLS_SHU', 'BST__ON', 'BST_OFF']
-        ACTIVE_COLOR = 'grey'
-        INACTIVE_COLOR = 'white'
-        BOX_HEIGHT = 0.6
-        BOX_Y_OFFSET = BOX_HEIGHT / 2
-        DEFAULT_DURATION = 50
-        INFINITE_EXTENSION = 1e9  # 1 billion seconds
-        
-        def get_group_name(event):
-            """Get the group name for an event based on its function type."""
-            if event.func in ['SET_PIN', 'TGL_PIN']:
-                pin_name = event.arg1 if isinstance(event.arg1, str) else rev_pin_map[event.arg1]
-                return f"{event.func}({pin_name})"
-            elif event.func in ['EN__PIN', 'DIS_PIN']:
-                pin_name = event.arg1 if isinstance(event.arg1, str) else rev_pin_map[event.arg1]
-                return f"Enabled({pin_name})"
-            elif event.func in ['OPE_SHU', 'CLS_SHU']:
-                return "Shutter"
-            elif event.func in ['BST__ON', 'BST_OFF']:
-                return "Burst"
-            else:
-                return event.func
-        
-        def is_active_state(event):
-            """Determine if an event represents an active state."""
-            active_states = {
-                'SET_PIN': lambda e: e.arg2 == 1,  # HIGH is active
-                'TGL_PIN': lambda e: True,  # Toggle is always active
-                'EN__PIN': lambda e: True,  # Enable is active
-                'DIS_PIN': lambda e: False,  # Disable is inactive
-                'OPE_SHU': lambda e: True,  # Open is active
-                'CLS_SHU': lambda e: False,  # Close is inactive
-                'BST__ON': lambda e: True,  # Burst on is active
-                'BST_OFF': lambda e: False,  # Burst off is inactive
-            }
-            return active_states.get(event.func, lambda e: True)(event)
-        
-        def create_rectangle(x, y, width, color, hatch=None):
-            """Create a rectangle patch with consistent styling."""
-            return patches.Rectangle(
-                (x, y - BOX_Y_OFFSET), width, BOX_HEIGHT,
-                linewidth=1, edgecolor='black', facecolor=color, alpha=0.7,
-                hatch=hatch
-            )
-        
-        def plot_shutter_event(event, start_time, end_time, y_pos, color):
-            """Plot a shutter event with transient state visualization."""
-            try:
-                shutter_delay = self.shutter_delay_us
-            except:
-                # Fallback if shutter_delay_us is not available
-                shutter_delay = 1000  # Default 1ms shutter delay
-            
-            duration = end_time - start_time
-            
-            if event.func == 'OPE_SHU':
-                # Opening: first shutter_delay is transient, then full open
-                if duration <= shutter_delay:
-                    # Entire duration is transient
-                    rect = create_rectangle(start_time, y_pos, duration, color, hatch='///')
-                    ax.add_patch(rect)
-                else:
-                    # Transient period (hatched)
-                    rect_transient = create_rectangle(start_time, y_pos, shutter_delay, color, hatch='///')
-                    ax.add_patch(rect_transient)
-                    
-                    # Full open period (solid)
-                    rect = create_rectangle(start_time + shutter_delay, y_pos, duration - shutter_delay, color)
-                    ax.add_patch(rect)
-            else:  # CLS_SHU
-                # Closing: first shutter_delay is transient, then fully closed
-                if duration <= shutter_delay:
-                    # Entire duration is transient
-                    rect = create_rectangle(start_time, y_pos, duration, color, hatch='///')
-                    ax.add_patch(rect)
-                else:
-                    # Transient period (hatched)
-                    rect_transient = create_rectangle(start_time, y_pos, shutter_delay, color, hatch='///')
-                    ax.add_patch(rect_transient)
-                    
-                    # Full closed period (solid)
-                    rect = create_rectangle(start_time + shutter_delay, y_pos, duration - shutter_delay, color)
-                    ax.add_patch(rect)
-        
-        def plot_state_events(group_events, y_pos, group_name):
-            """Plot state-based events with proper state transitions."""
-            # Expand and sort all repeating events
-            expanded_events = []
-            for event in group_events:
-                expanded_events.extend(event.expand_repeating_events())
-            
-            if not expanded_events:
-                return [], []
-            
-            sorted_events = sorted(expanded_events, key=lambda e: e.ts)
-            all_ts = []
-            all_ends = []
-            
-            # Track toggle state for TGL_PIN events
-            toggle_state = False  # Start with unknown state
-            current_hatch = '///'  # Start with forward slash pattern
-            
-            for i, event in enumerate(sorted_events):
-                # Determine end time
-                if i + 1 < len(sorted_events):
-                    end_time = sorted_events[i + 1].ts
-                else:
-                    end_time = event.ts + INFINITE_EXTENSION
-                
-                # Handle TGL_PIN events specially
-                if event.func == 'TGL_PIN':
-                    # Toggle events use hatched pattern with alternating direction
-                    rect = create_rectangle(event.ts, y_pos, end_time - event.ts, ACTIVE_COLOR, hatch=current_hatch)
-                    ax.add_patch(rect)
-                    # Flip hatch direction for next toggle
-                    current_hatch = '\\\\\\' if current_hatch == '///' else '///'
-                else:
-                    # Determine color for non-toggle events
-                    color = ACTIVE_COLOR if is_active_state(event) else INACTIVE_COLOR
-                    
-                    # Plot based on event type
-                    if group_name == "Shutter" and event.func in ['OPE_SHU', 'CLS_SHU']:
-                        plot_shutter_event(event, event.ts, end_time, y_pos, color)
-                    else:
-                        # Regular state event
-                        rect = create_rectangle(event.ts, y_pos, end_time - event.ts, color)
-                        ax.add_patch(rect)
-                
-                all_ts.append(event.ts)
-                all_ends.append(end_time)
-            
-            return all_ts, all_ends
-        
-        def plot_non_state_events(group_events, y_pos):
-            """Plot non-state events as simple rectangles."""
-            all_ts = []
-            all_ends = []
-            
-            for event in group_events:
-                expanded_events = event.expand_repeating_events()
-                
-                for expanded_event in expanded_events:
-                    rect = create_rectangle(expanded_event.ts, y_pos, DEFAULT_DURATION, ACTIVE_COLOR)
-                    ax.add_patch(rect)
-                    all_ts.append(expanded_event.ts)
-                    all_ends.append(expanded_event.ts + DEFAULT_DURATION)
-            
-            return all_ts, all_ends
-        
-        # Group events
+        # Group and sort events
         event_groups = defaultdict(list)
         for event in events:
-            group_name = get_group_name(event)
-            event_groups[group_name].append(event)
-        
-        # Sort event groups by type and pin name
-        def get_sort_key(group_name):
-            """Get sorting key for group names."""
-            # Extract event type and pin name for sorting
-            if '(' in group_name and ')' in group_name:
-                # Format: "EVENT_TYPE(PIN_NAME)" or "Enabled(PIN_NAME)"
-                event_type = group_name.split('(')[0]
-                pin_name = group_name.split('(')[1].rstrip(')')
-                
-                # Define event type priority order
-                type_priority = {
-                    'SET_PIN': 1,
-                    'TGL_PIN': 2,
-                    'Enabled': 3,
-                    'Shutter': 4,
-                    'Burst': 5
-                }
-                
-                # Get priority for this event type (default to 999 for unknown types)
-                priority = type_priority.get(event_type, 999)
-                
-                # Create a sortable key for pin names that handles numeric parts correctly
-                def pin_sort_key(pin):
-                    # Extract letter prefix and numeric suffix
-                    import re
-                    match = re.match(r'([A-Za-z]+)(\d*)', pin)
-                    if match:
-                        prefix, number = match.groups()
-                        # Convert number to int for proper numeric sorting, default to 0 if no number
-                        num = int(number) if number else 0
-                        return (prefix, num)
-                    else:
-                        # Fallback for pins without numeric part
-                        return (pin, 0)
-                
-                return (priority, pin_sort_key(pin_name))
-            else:
-                # For groups without pin names (like "Shutter", "Burst")
-                type_priority = {
-                    'Shutter': 4,
-                    'Burst': 5
-                }
-                priority = type_priority.get(group_name, 999)
-                return (priority, group_name)
-        
-        # Sort event groups
-        sorted_groups = sorted(event_groups.items(), key=lambda x: get_sort_key(x[0]))
+            event_groups[visualizer.get_group_name(event)].append(event)
         
         # Plot events
-        y_positions = {}
-        y_pos = 0
-        all_timestamps = []
-        all_end_times = []
+        sorted_groups = sorted(event_groups.items(), key=lambda x: visualizer.get_sort_key(x[0]))
+        y_positions = {name: i for i, (name, _) in enumerate(sorted_groups)}
+        all_timestamps, all_end_times = [], []
         
         for group_name, group_events in sorted_groups:
-            if group_name not in y_positions:
-                y_positions[group_name] = y_pos
-                y_pos += 1
-            
             y = y_positions[group_name]
-            
-            # Plot based on event type
-            if group_events and group_events[0].func in STATE_EVENTS:
-                ts, ends = plot_state_events(group_events, y, group_name)
+            if group_events and group_events[0].func in visualizer.STATE_EVENTS:
+                ts, ends = visualizer.plot_state_events(group_events, y, group_name)
             else:
-                ts, ends = plot_non_state_events(group_events, y)
-            
+                ts, ends = visualizer.plot_non_state_events(group_events, y)
             all_timestamps.extend(ts)
             all_end_times.extend(ends)
         
-        # Setup axes
+        # Setup plot
         ax.set_ylim(-0.5, len(y_positions) - 0.5)
         ax.set_yticks(list(y_positions.values()))
         ax.set_yticklabels(list(y_positions.keys()))
         ax.set_xlabel('Time (us)')
-        
-        # Set title
-        if title is None:
-            title = f'Scheduled Events ({len(events)} total)'
-        ax.set_title(title)
-        
-        # Add grid
+        ax.set_title(title or f'Scheduled Events ({len(events)} total)')
         ax.grid(True, alpha=0.3, axis='x')
         
         # Set x-axis limits
         if all_timestamps:
-            min_ts = min(all_timestamps)
-            max_ts = max(all_timestamps)
+            min_ts, max_ts = min(all_timestamps), max(all_timestamps)
             time_range = max_ts - min_ts if max_ts > min_ts else 1
-            pad_left = int(time_range * 0.02)
-            pad_right = int(time_range * 0.2)
-            ax.set_xlim(min_ts - pad_left, max_ts + pad_right)
+            ax.set_xlim(min_ts - time_range * 0.02, max_ts + time_range * 0.2)
         else:
             ax.set_xlim(0, 1)
         
