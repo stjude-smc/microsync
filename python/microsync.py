@@ -879,6 +879,190 @@ class SyncDevice(object):
             events.append(e)
         return events
 
+    def plot_events(self, unit="us", figsize=(15, 10), show_labels=True, show_low=False, title=None):
+        """
+        Retrieve and visualize scheduled events from the device.
+        
+        Args:
+            unit (str): Time unit for timestamps ("cts", "us", or "ms")
+            figsize (tuple): Figure size (width, height)
+            show_labels (bool): Whether to show event labels
+            show_low (bool): Whether to show LOW pin states (default: False)
+            title (str, optional): Custom title for the plot
+        
+        Returns:
+            matplotlib.figure.Figure: The generated plot figure
+        
+        Example:
+            >>> fig = sd.plot_events("us")
+            >>> plt.show()
+        """
+        import matplotlib.pyplot as plt
+        import matplotlib.patches as patches
+        from collections import defaultdict
+        
+        # Get events from device
+        events = self.get_events(unit)
+        
+        if not events:
+            print("No events scheduled on device")
+            return None
+        
+        # Create figure
+        fig, ax = plt.subplots(figsize=figsize)
+        
+        # Group events by pin for SET_PIN, by function for others
+        event_groups = defaultdict(list)
+        pin_events = defaultdict(list)  # Track SET_PIN events by pin
+        
+        for event in events:
+            if event.func == 'SET_PIN':
+                # Get pin name
+                pin_name = event.arg1 if isinstance(event.arg1, str) else f"Pin{event.arg1}"
+                pin_events[pin_name].append(event)
+            else:
+                event_groups[event.func].append(event)
+        
+        # Add pin groups (one per pin, regardless of level)
+        for pin_name, pin_event_list in pin_events.items():
+            event_groups[pin_name] = pin_event_list
+        
+        # Define colors for different event types
+        colors = {
+            'TGL_PIN': '#ff7f0e',      # Orange
+            'open_shutters_func': '#2ca02c',  # Green
+            'close_shutters_func': '#d62728', # Red
+            'default': '#7f7f7f'       # Gray
+        }
+        
+        # Pin state colors
+        pin_high_color = '#E68435'     # Orange for high
+        pin_low_color = '#EBC4C0'      # Light pink for low
+        
+        # Y-axis positions for different event types
+        y_positions = {}
+        y_pos = 0
+        
+        # Plot events
+        for func_name, func_events in event_groups.items():
+            if func_name not in y_positions:
+                y_positions[func_name] = y_pos
+                y_pos += 1
+            
+            y = y_positions[func_name]
+            
+            # Handle pin events differently (state-based visualization)
+            if func_events and func_events[0].func == 'SET_PIN':
+                # Expand repeating events into their full sequence
+                expanded_events = []
+                for event in func_events:
+                    if event.N > 1 and event.intvl > 0:
+                        # Repeating event - create N instances
+                        for i in range(event.N):
+                            expanded_event = type('Event', (), {
+                                'ts': event.ts + i * event.intvl,
+                                'arg2': event.arg2,
+                                'func': event.func
+                            })()
+                            expanded_events.append(expanded_event)
+                    else:
+                        # Single event
+                        expanded_events.append(event)
+                
+                # Sort expanded events by timestamp
+                pin_events_sorted = sorted(expanded_events, key=lambda e: e.ts)
+                
+                # Find the time range for the plot
+                if events:
+                    max_time = max(e.ts + (e.intvl if e.N > 1 else 100) for e in events)
+                else:
+                    max_time = 1000
+                
+                # Create state boxes for all events (HIGH and LOW)
+                for i, event in enumerate(pin_events_sorted):
+                    # Determine box end time (always based on next event, regardless of level)
+                    if i + 1 < len(pin_events_sorted):
+                        # Next event exists - box ends at next event
+                        end_time = pin_events_sorted[i + 1].ts
+                    else:
+                        # Last event - box extends to plot end
+                        end_time = max_time + 100
+                    
+                    # Determine color based on pin level
+                    color = pin_high_color if event.arg2 == 1 else pin_low_color
+                    
+                    # Only show the box if it's HIGH or if show_low is True
+                    if event.arg2 == 1 or show_low:
+                        # Create rectangle for the state
+                        duration = end_time - event.ts
+                        rect = patches.Rectangle(
+                            (event.ts, y - 0.3), duration, 0.6,
+                            linewidth=1, edgecolor='black', facecolor=color, alpha=0.7
+                        )
+                        ax.add_patch(rect)
+            else:
+                # Handle non-pin events as before
+                color = colors.get(func_name, colors['default'])
+                
+                for event in func_events:
+                    duration = 50
+                    # Determine event duration and type
+                    if event.N > 1 and event.intvl > 0:
+                        # Repeating event - show first occurrence
+                        duration = event.intvl
+                        event_type = "repeating"
+                    else:
+                        event_type = "single"
+                    
+                    # Create rectangle for the event
+                    rect = patches.Rectangle(
+                        (event.ts, y - 0.3), duration, 0.6,
+                        linewidth=1, edgecolor='black', facecolor=color, alpha=0.7
+                    )
+                    ax.add_patch(rect)
+                
+                # Add label if requested (for non-pin events)
+                if show_labels:
+                    if func_name in ['TGL_PIN']:
+                        pin_name = event.arg1 if isinstance(event.arg1, str) else f"Pin{event.arg1}"
+                        label = f"{func_name}({pin_name})"
+                    else:
+                        label = func_name
+                    
+                    # Add text label
+                    ax.text(event.ts + duration/2, y, label, 
+                           ha='center', va='center', fontsize=8, 
+                           bbox=dict(boxstyle="round,pad=0.2", facecolor='white', alpha=0.8))
+                
+                # Add vertical line for instant events
+                if event_type == "single":
+                    ax.axvline(x=event.ts, ymin=y-0.4, ymax=y+0.4, 
+                              color='black', linewidth=1, alpha=0.5)
+        
+        # Set up axes
+        ax.set_ylim(-0.5, len(y_positions) - 0.5)
+        ax.set_yticks(list(y_positions.values()))
+        ax.set_yticklabels(list(y_positions.keys()))
+        ax.set_xlabel(f'Time ({unit})')
+        ax.set_ylabel('Event Type')
+        
+        # Set title
+        if title is None:
+            title = f'Scheduled Events ({len(events)} total)'
+        ax.set_title(title)
+        
+        # Add grid
+        ax.grid(True, alpha=0.3, axis='x')
+        
+        # Set x-axis limits with some padding
+        if events:
+            min_time = min(e.ts for e in events)
+            max_time = max(e.ts + (e.intvl if e.N > 1 else 100) for e in events)
+            ax.set_xlim(min_time - 100, max_time + 100)
+        
+        plt.tight_layout()
+        return fig
+
     ## pTIRF extension
     def open_shutters(self, mask=0):
         """
