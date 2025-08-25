@@ -914,12 +914,16 @@ class SyncDevice(object):
         # Group events by pin for SET_PIN, by function for others
         event_groups = defaultdict(list)
         pin_events = defaultdict(list)  # Track SET_PIN events by pin
+        shutter_events = []  # Track shutter events
         
         for event in events:
             if event.func == 'SET_PIN':
                 # Get pin name
                 pin_name = event.arg1 if isinstance(event.arg1, str) else f"Pin{event.arg1}"
                 pin_events[pin_name].append(event)
+            elif event.func in ['OPE_SHU', 'CLS_SHU']:
+                # Group shutter events together
+                shutter_events.append(event)
             else:
                 event_groups[event.func].append(event)
         
@@ -927,11 +931,14 @@ class SyncDevice(object):
         for pin_name, pin_event_list in pin_events.items():
             event_groups[pin_name] = pin_event_list
         
+        # Add shutter group if there are shutter events
+        if shutter_events:
+            event_groups['Shutters'] = shutter_events
+        
         # Define colors for different event types
         colors = {
             'TGL_PIN': '#ff7f0e',      # Orange
-            'open_shutters_func': '#2ca02c',  # Green
-            'close_shutters_func': '#d62728', # Red
+            'Shutters': '#2ca02c',     # Green for shutters
             'default': '#7f7f7f'       # Gray
         }
         
@@ -997,9 +1004,72 @@ class SyncDevice(object):
                         duration = end_time - event.ts
                         rect = patches.Rectangle(
                             (event.ts, y - 0.3), duration, 0.6,
+                            linewidth=1, edgecolor='black', facecolor=color, alpha=1.0
+                        )
+                        ax.add_patch(rect)
+            
+            # Handle shutter events with state-based visualization
+            elif func_name == 'Shutters':
+                # Expand repeating events into their full sequence
+                expanded_events = []
+                for event in func_events:
+                    if event.N > 1 and event.intvl > 0:
+                        # Repeating event - create N instances
+                        for i in range(event.N):
+                            expanded_event = type('Event', (), {
+                                'ts': event.ts + i * event.intvl,
+                                'func': event.func
+                            })()
+                            expanded_events.append(expanded_event)
+                    else:
+                        # Single event
+                        expanded_events.append(event)
+                
+                # Sort expanded events by timestamp
+                shutter_events_sorted = sorted(expanded_events, key=lambda e: e.ts)
+                
+                # Find the time range for the plot
+                if events:
+                    max_time = max(e.ts + (e.intvl if e.N > 1 else 100) for e in events)
+                else:
+                    max_time = 1000
+                
+                # Create state boxes for shutter events, and overlay transient (opening/closing) state
+                shutter_delay = getattr(self, "shutter_delay_us", 0)
+                for i, event in enumerate(shutter_events_sorted):
+                    # Determine box end time (always based on next event)
+                    if i + 1 < len(shutter_events_sorted):
+                        end_time = shutter_events_sorted[i + 1].ts
+                    else:
+                        end_time = max_time + 100
+
+                    is_open = event.func == 'OPE_SHU'
+                    # Main color for open/closed
+                    if is_open:
+                        color = '#2ca02c'  # Green for open
+                    else:
+                        color = '#90EE90' if show_low else 'none'
+
+                    # Only show the box if it's open or if show_low is True for closed
+                    if is_open or show_low:
+                        duration = end_time - event.ts
+                        rect = patches.Rectangle(
+                            (event.ts, y - 0.3), duration, 0.6,
                             linewidth=1, edgecolor='black', facecolor=color, alpha=0.7
                         )
                         ax.add_patch(rect)
+
+                    # Always show the transient (hatched) box for both opening and closing
+                    if shutter_delay > 0:
+                        hatch_color = '#FFD700' if is_open else '#B0B0B0'
+                        hatch = '////' if is_open else '\\\\\\\\'
+                        duration = end_time - event.ts
+                        transient_rect = patches.Rectangle(
+                            (event.ts, y - 0.3), min(shutter_delay, duration), 0.6,
+                            linewidth=0, edgecolor=None, facecolor='none',
+                            hatch=hatch, alpha=0.7
+                        )
+                        ax.add_patch(transient_rect)
             else:
                 # Handle non-pin events as before
                 color = colors.get(func_name, colors['default'])
