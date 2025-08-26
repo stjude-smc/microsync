@@ -313,6 +313,20 @@ class Event:
                 })()
                 expanded_events.append(expanded_event)
             return expanded_events
+        elif self.N == 0 and self.intvl > 0:
+            # Infinite repeating event - expand to 1000 instances for visualization
+            expanded_events = []
+            for i in range(1000):
+                expanded_event = type('Event', (), {
+                    'ts': self.ts + i * self.intvl,
+                    'arg1': self.arg1,
+                    'arg2': self.arg2,
+                    'func': self.func,
+                    'N': 1,
+                    'intvl': 0
+                })()
+                expanded_events.append(expanded_event)
+            return expanded_events
         else:
             # Single event
             return [self]

@@ -266,11 +266,15 @@ The following high-level acquisition modes are provided as convenience functions
 - **Behavior:** Laser shutters remain open during entire acquisition, camera triggered at precise intervals
 - **First frame:** Automatically discarded as it contains pre-acquisition noise
 
+![](doc/continuous_acq.svg)
+
 #### Stroboscopic/Timelapse Imaging  
 - **Use case:** Brief laser illumination during each camera exposure
 - **Method:** `sd.start_stroboscopic_acq(exp_time, N_frames, ts=0, frame_period=0)`
 - **Behavior:** Laser pulse synchronized with camera exposure, followed by readout period
 - **Timelapse:** Optional waiting period between frames when `frame_period > 0`
+
+![](doc/stroboscopic_acq.svg)
 
 #### ALEX (Alternating Laser Excitation)
 
@@ -279,6 +283,8 @@ The following high-level acquisition modes are provided as convenience functions
 - **Method:** `sd.start_ALEX_acq(exp_time, N_bursts, ts=0, burst_period=0)`
 - **Behavior:** Bursts of frames, each illuminated by different laser channel
 - **Timelapse:** Optional waiting period between bursts when `burst_period > 0`
+
+![](doc/ALEX_acq.svg)
 
 ### Status and Events
 
@@ -304,10 +310,6 @@ plot.save_plot("events.svg")   # Vector SVG
 - **Interactive zoom and pan** - Examine precise timing details
 - **Hover tooltips** - See exact timestamps and durations
 - **State-based visualization** - Gray boxes show active states (HIGH pins, open shutters)
-- **Transient state indication** - Dashed borders show shutter transition periods
-- **Toggle event patterns** - Alternating line styles for unknown states
-- **Automatic grouping** - Events grouped by type and pin
-- **Natural sorting** - Pins sorted numerically (A1, A2, A12)
 
 ### Timing Configuration
 

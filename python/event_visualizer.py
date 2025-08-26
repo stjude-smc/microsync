@@ -123,20 +123,23 @@ class EventVisualizer:
         
         sorted_events = sorted(expanded_events, key=lambda e: e.ts)
         boxes = []
+        current_toggle_color = 'olive'  # Start with olive
         
         for i, event in enumerate(sorted_events):
             end_time = sorted_events[i + 1].ts if i + 1 < len(sorted_events) else event.ts + self.INFINITE_EXTENSION
             
             if event.func == 'TGL_PIN':
-                # Toggle events use wheat color to indicate unknown state
+                # Toggle events use alternating colors to indicate different states
                 boxes.append({
                     'x': event.ts,
                     'y': y_pos - self.BOX_HEIGHT/2,
                     'width': end_time - event.ts,
                     'height': self.BOX_HEIGHT,
-                    'color': 'wheat',
+                    'color': current_toggle_color,
                     'alpha': 0.7
                 })
+                # Alternate between olive and teal
+                current_toggle_color = 'teal' if current_toggle_color == 'olive' else 'olive'
             else:
                 color = 'grey' if self.is_active_state(event) else 'white'
                 if group_name == "Shutter" and event.func in ['OPE_SHU', 'CLS_SHU']:
