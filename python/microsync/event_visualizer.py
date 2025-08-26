@@ -45,7 +45,7 @@ class EventVisualizer:
     def get_group_name(self, event):
         """Get the group name for an event based on its function type."""
         try:
-            from rev_pin_map import rev_pin_map
+            from .rev_pin_map import rev_pin_map
             pin_name = event.arg1 if isinstance(event.arg1, str) else rev_pin_map[event.arg1]
         except (KeyError, ImportError):
             # Fallback for unknown pin numbers

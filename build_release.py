@@ -12,7 +12,7 @@ from pathlib import Path
 
 def get_version():
     """Get version from __version__.py"""
-    version_file = Path("python/__version__.py")
+    version_file = Path("python/microsync/__version__.py")
     if not version_file.exists():
         raise FileNotFoundError(f"Version file not found: {version_file}")
     

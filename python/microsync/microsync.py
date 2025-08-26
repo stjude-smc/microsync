@@ -1,11 +1,11 @@
-from __version__ import __version__
-from constants import ms, MHz, UNIFORM_TIME_DELAY
+from .__version__ import __version__
+from .constants import ms, MHz, UNIFORM_TIME_DELAY
 from ctypes import c_int32
 from ctypes import c_uint16
 from ctypes import c_uint32
 from ctypes import c_uint8
 from enum import Enum
-from rev_pin_map import rev_pin_map
+from .rev_pin_map import rev_pin_map
 from serial import Serial, SerialException
 import ctypes
 import datetime
@@ -942,7 +942,7 @@ class SyncDevice(object):
             return None
         
         # Import and create visualizer
-        from event_visualizer import EventVisualizer, enable_jupyter_notebook, display_plot
+        from .event_visualizer import EventVisualizer, enable_jupyter_notebook, display_plot
         visualizer = EventVisualizer(getattr(self, 'shutter_delay_us', 1000))
         
         # Enable Jupyter notebook output
@@ -1173,3 +1173,6 @@ class SyncDevice(object):
                 if rev_pin_map[event.arg1] == "A12":
                     return event.N
         return 0
+
+# Export EventVisualizer for direct import
+from .event_visualizer import EventVisualizer
