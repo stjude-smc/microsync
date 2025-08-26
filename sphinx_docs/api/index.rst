@@ -30,6 +30,15 @@ Modules
    :undoc-members:
    :no-index:
 
+Event Visualization
+-------------------
+
+.. automodule:: event_visualizer
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :no-index:
+
 Utility Functions
 -----------------
 

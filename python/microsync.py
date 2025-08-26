@@ -291,6 +291,45 @@ class Event:
         to the corresponding function name for pretty printing of the event table.
         """
         self.func = func_map[str(self.func)]
+    
+    def expand_repeating_events(self):
+        """
+        Expand repeating events into their full sequence.
+        
+        Returns:
+            list: List of Event objects representing all instances of repeating events
+        """
+        if self.N > 1 and self.intvl > 0:
+            # Repeating event - create N instances
+            expanded_events = []
+            for i in range(self.N):
+                expanded_event = type('Event', (), {
+                    'ts': self.ts + i * self.intvl,
+                    'arg1': self.arg1,
+                    'arg2': self.arg2,
+                    'func': self.func,
+                    'N': 1,
+                    'intvl': 0
+                })()
+                expanded_events.append(expanded_event)
+            return expanded_events
+        elif self.N == 0 and self.intvl > 0:
+            # Infinite repeating event - expand to 1000 instances for visualization
+            expanded_events = []
+            for i in range(1000):
+                expanded_event = type('Event', (), {
+                    'ts': self.ts + i * self.intvl,
+                    'arg1': self.arg1,
+                    'arg2': self.arg2,
+                    'func': self.func,
+                    'N': 1,
+                    'intvl': 0
+                })()
+                expanded_events.append(expanded_event)
+            return expanded_events
+        else:
+            # Single event
+            return [self]
 
 
 
@@ -878,6 +917,57 @@ class SyncDevice(object):
                 e.intvl = round(cts2us(e.intvl, presc)*(0.001 if unit == "ms" else 1))
             events.append(e)
         return events
+
+
+
+    def show_events(self, title=None):
+        """
+        Retrieve and visualize scheduled events from the device (always in microseconds).
+        
+        Args:
+            title (str, optional): Custom title for the plot
+        
+        Returns:
+            bokeh.plotting.figure.Figure: Interactive Bokeh plot
+        
+        Example:
+            >>> fig = sd.show_events()
+            >>> # In Jupyter notebook, the plot will be displayed automatically
+            >>> # To save: fig.save_plot("events.html")  # or .png, .svg
+        """
+        # Get events from device (always in microseconds)
+        events = self.get_events("us")
+        if not events:
+            print("No events scheduled on device")
+            return None
+        
+        # Import and create visualizer
+        from event_visualizer import EventVisualizer, enable_jupyter_notebook, display_plot
+        visualizer = EventVisualizer(getattr(self, 'shutter_delay_us', 1000))
+        
+        # Enable Jupyter notebook output
+        enable_jupyter_notebook()
+        
+        # Create interactive plot
+        plot = visualizer.create_plot(events, title)
+        
+        # Display the plot in Jupyter
+        display_plot(plot)
+        
+        # Create a wrapper class to add save functionality
+        class PlotWrapper:
+            def __init__(self, plot, visualizer):
+                self.plot = plot
+                self.visualizer = visualizer
+            
+            def save_plot(self, filename, format=None):
+                return self.visualizer.save_plot(self.plot, filename, format)
+            
+            def __getattr__(self, name):
+                # Delegate all other attributes to the original plot
+                return getattr(self.plot, name)
+        
+        return PlotWrapper(plot, visualizer)
 
     ## pTIRF extension
     def open_shutters(self, mask=0):

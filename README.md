@@ -47,6 +47,7 @@ The device connects to your computer via UART (115,200 baud). All timing and pin
 - **Priority event queue** with hardware-timed execution
 - **Laser shutter and interlock safety logic**
 - **Support for advanced acquisition modes** (continuous, stroboscopic, ALEX)
+- **Interactive event visualization** with Bokeh (zoom, pan, hover tooltips)
 - **Comprehensive Python API** with logging and context management
 - **Extensive examples and documentation in Jupyter notebook**
 
@@ -265,11 +266,15 @@ The following high-level acquisition modes are provided as convenience functions
 - **Behavior:** Laser shutters remain open during entire acquisition, camera triggered at precise intervals
 - **First frame:** Automatically discarded as it contains pre-acquisition noise
 
+![](doc/continuous_acq.svg)
+
 #### Stroboscopic/Timelapse Imaging  
 - **Use case:** Brief laser illumination during each camera exposure
 - **Method:** `sd.start_stroboscopic_acq(exp_time, N_frames, ts=0, frame_period=0)`
 - **Behavior:** Laser pulse synchronized with camera exposure, followed by readout period
 - **Timelapse:** Optional waiting period between frames when `frame_period > 0`
+
+![](doc/stroboscopic_acq.svg)
 
 #### ALEX (Alternating Laser Excitation)
 
@@ -279,10 +284,32 @@ The following high-level acquisition modes are provided as convenience functions
 - **Behavior:** Bursts of frames, each illuminated by different laser channel
 - **Timelapse:** Optional waiting period between bursts when `burst_period > 0`
 
+![](doc/ALEX_acq.svg)
+
 ### Status and Events
 
 - **Get all scheduled events:** `sd.get_events(unit="us"|"ms")`
 - **Check frames left:** `sd.N_frames_left()`
+
+### Interactive Event Visualization
+
+The `show_events()` method provides interactive visualization of scheduled events using Bokeh:
+
+```python
+# Create interactive plot
+plot = sd.show_events()
+
+# In Jupyter notebook, plot displays automatically
+# Save to file
+plot.save_plot("events.html")  # Interactive HTML
+plot.save_plot("events.png")   # Static PNG
+plot.save_plot("events.svg")   # Vector SVG
+```
+
+**Features:**
+- **Interactive zoom and pan** - Examine precise timing details
+- **Hover tooltips** - See exact timestamps and durations
+- **State-based visualization** - Gray boxes show active states (HIGH pins, open shutters)
 
 ### Timing Configuration
 
