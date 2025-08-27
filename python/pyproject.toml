@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "microsync"
-dynamic = ["version"]
+dynamic = ["version", "dependencies"]
 description = "Python driver for 32-bit microscope synchronization device."
 license = {text = "Apache 2.0"}
 authors = [
@@ -39,7 +39,6 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 requires-python = ">=3.7"
-dynamic = ["version", "dependencies"]
 
 [project.optional-dependencies]
 dev = [
