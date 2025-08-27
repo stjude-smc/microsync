@@ -15,17 +15,17 @@ Core Classes
 Modules
 -------
 
-.. automodule:: constants
+.. automodule:: microsync.constants
    :members:
    :undoc-members:
    :no-index:
 
-.. automodule:: rev_pin_map
+.. automodule:: microsync.rev_pin_map
    :members:
    :undoc-members:
    :no-index:
 
-.. automodule:: __version__
+.. automodule:: microsync.__version__
    :members:
    :undoc-members:
    :no-index:
@@ -33,7 +33,7 @@ Modules
 Event Visualization
 -------------------
 
-.. automodule:: event_visualizer
+.. automodule:: microsync.event_visualizer
    :members:
    :undoc-members:
    :show-inheritance:
