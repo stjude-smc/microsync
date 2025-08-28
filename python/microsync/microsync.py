@@ -935,14 +935,14 @@ class SyncDevice(object):
             >>> # To save: fig.save_plot("events.html")  # or .png, .svg
         """
         # Get events from device (always in microseconds)
-        events = self.get_events("us")
+        events = self.get_events("ms")
         if not events:
             print("No events scheduled on device")
             return None
         
         # Import and create visualizer
         from .event_visualizer import EventVisualizer, enable_jupyter_notebook, display_plot
-        visualizer = EventVisualizer(getattr(self, 'shutter_delay_us', 1000))
+        visualizer = EventVisualizer(shutter_delay_ms=getattr(self, 'shutter_delay_us', 1000)/1000)
         
         # Enable Jupyter notebook output
         enable_jupyter_notebook()

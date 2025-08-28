@@ -34,14 +34,14 @@ class EventVisualizer:
     BOX_HEIGHT = 0.6
     INFINITE_EXTENSION = 1e9
     
-    def __init__(self, shutter_delay=1000):
+    def __init__(self, shutter_delay_ms=1.0):
         """
         Initialize the event visualizer.
         
         Args:
-            shutter_delay (int): Shutter delay time in microseconds
+            shutter_delay_ms (int): Shutter delay time in milliseconds
         """
-        self.shutter_delay = shutter_delay
+        self.shutter_delay_ms = shutter_delay_ms
     
     def get_group_name(self, event):
         """Get the group name for an event based on its function type."""
@@ -84,7 +84,7 @@ class EventVisualizer:
         duration = end_time - start_time
         boxes = []
         
-        if duration <= self.shutter_delay:
+        if duration <= self.shutter_delay_ms:
             # Entire duration is transient
             boxes.append({
                 'x': start_time,
@@ -99,15 +99,15 @@ class EventVisualizer:
             boxes.append({
                 'x': start_time,
                 'y': y_pos - self.BOX_HEIGHT/2,
-                'width': self.shutter_delay,
+                'width': self.shutter_delay_ms,
                 'height': self.BOX_HEIGHT,
                 'color': 'wheat',
                 'alpha': 0.7
             })
             boxes.append({
-                'x': start_time + self.shutter_delay,
+                'x': start_time + self.shutter_delay_ms,
                 'y': y_pos - self.BOX_HEIGHT/2,
-                'width': duration - self.shutter_delay,
+                'width': duration - self.shutter_delay_ms,
                 'height': self.BOX_HEIGHT,
                 'color': color,
                 'alpha': 0.7
