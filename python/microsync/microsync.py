@@ -281,8 +281,8 @@ class Event:
         if f in ["SET_PIN", "TGL_PIN"]:
             arg1 = rev_pin_map[arg1]
         return (f"{f}({arg1:<3}, {self.arg2:<3}) at " 
-              + f"t={self.ts:>11}{self.unit}. Call "
-              + f"{self.N:>6} times every {self.intvl:>10} {self.unit}")
+              + f"t={round(self.ts):>11}{self.unit}. Call "
+              + f"{self.N:>6} times every {round(self.intvl):>10} {self.unit}")
 
     def map_func(self, func_map):
         """
@@ -913,11 +913,10 @@ class SyncDevice(object):
             e.ts -= us2cts(UNIFORM_TIME_DELAY, presc)
             if unit in ["us", "ms"]:
                 e.unit = unit
-                e.ts = round(cts2us(e.ts, presc)*(0.001 if unit == "ms" else 1))
-                e.intvl = round(cts2us(e.intvl, presc)*(0.001 if unit == "ms" else 1))
+                e.ts = cts2us(e.ts, presc)*(0.001 if unit == "ms" else 1)
+                e.intvl = cts2us(e.intvl, presc)*(0.001 if unit == "ms" else 1)
             events.append(e)
         return events
-
 
 
     def show_events(self, title=None):

@@ -5,8 +5,8 @@ This package provides a Python driver for controlling and synchronizing
 microscope components including lasers, cameras, and other timing-critical devices.
 """
 
-from .microsync import SyncDevice
-from .event_visualizer import EventVisualizer
+from .microsync import SyncDevice, Event
+from .event_visualizer import EventVisualizer, plot_event_file
 from .constants import *
 from .rev_pin_map import rev_pin_map
 from .__version__ import __version__

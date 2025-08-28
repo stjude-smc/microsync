@@ -12,6 +12,7 @@ from bokeh.io import output_notebook
 from collections import defaultdict
 from itertools import chain
 import re
+import os
 
 
 class EventVisualizer:
@@ -198,12 +199,18 @@ class EventVisualizer:
         # Create plot
         p = bk.figure(
             title=title or f'Scheduled Events ({len(events)} total)',
-            x_axis_label='Time (μs)',
+            x_axis_label='Time (ms)',
             y_axis_label='',
-            width=800,
             height=400,
+            sizing_mode='stretch_width',
             tools='pan,box_zoom,wheel_zoom,reset,save'
         )
+        
+        # Configure wheel zoom to only affect x-axis and make it the default active tool
+        from bokeh.models import WheelZoomTool
+        wheel_zoom = p.select_one(WheelZoomTool)
+        wheel_zoom.dimensions = 'width'
+        p.toolbar.active_scroll = wheel_zoom
         
         # Process all events and collect box data
         all_boxes = []
@@ -272,8 +279,8 @@ class EventVisualizer:
         hover = HoverTool(
             tooltips=[
                 ("Group", "@group"),
-                ("Start Time", "@start_time μs"),
-                ("Duration", "@duration μs")
+                ("Start Time", "@start_time ms"),
+                ("Duration", "@duration ms")
             ]
         )
         p.add_tools(hover)
@@ -371,3 +378,69 @@ def display_plot(plot):
         except ImportError:
             # Not in Jupyter, just return the plot
             return plot
+    import re
+    func_pattern = rb'(\d+)\s+(\w+)\n'
+    matches = list(re.finditer(func_pattern, data))
+
+def plot_event_file(filepath):
+    """
+    Read events from a binary file and create a Bokeh plot.
+    
+    The file should contain:
+    1. Function address mapping (from "FUN" command response)
+    2. Event queue data (from "QUE" command response)
+    
+    Args:
+        filepath (str): Path to the binary event file
+        
+    Returns:
+        bokeh.plotting.figure.Figure: Interactive Bokeh plot
+    """
+    # Read binary data
+    data = open(filepath, "rb").read()
+    txt_lines = []
+    for l in data.splitlines():
+        try:
+            decoded = l.decode("ascii")
+            if re.match(r'^\d+\s+\w{7}$', decoded):
+                txt_lines.append(decoded)
+        except UnicodeDecodeError:
+            continue  # Skip lines that can't be decoded as ASCII
+    ll = txt_lines[-1]
+    idx = data.find(ll.encode('ascii')) + len(ll) + 2
+    bin_data = data[idx:]
+
+    # Parse map of function addresses
+    func_map = {k: v for k, v in [l.split() for l in txt_lines]}
+
+    # Read all events
+    events = []
+    for offset in range(0, len(bin_data), 28):
+        if offset + 28 > len(bin_data):
+            break
+        from .microsync import Event
+        e = Event(bin_data[offset:offset+28])
+        e.map_func(func_map)
+        
+        # Convert everything to milliseconds (float) - same logic as get_events
+        prescaler = 32
+        UNIFORM_TIME_DELAY = 500  # microseconds
+
+        def cts2us(cts, presc):
+            return cts * (1_000_000.0 * presc) / 84_000_000
+
+        def us2cts(us, presc):
+            return int(us * (84.0 * presc) / 1_000_000.0)
+
+        # Adjust timestamp and interval, all in ms - same as get_events
+        e.ts -= us2cts(UNIFORM_TIME_DELAY, prescaler)
+        e.ts = cts2us(e.ts, prescaler) * 0.001  # Convert to milliseconds
+        e.intvl = cts2us(e.intvl, prescaler) * 0.001  # Convert to milliseconds
+        e.unit = "ms"
+        events.append(e)
+
+    # Create visualization using existing EventVisualizer
+    visualizer = EventVisualizer()
+    title = f"Events from {os.path.basename(filepath)} ({len(events)} total)"
+    
+    display_plot(visualizer.create_plot(events, title))
