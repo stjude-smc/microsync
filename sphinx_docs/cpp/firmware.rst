@@ -56,7 +56,7 @@ Build Steps
 Upload Methods
 --------------
 
-See the `Firmware Upload` section in the `README <https://github.com/stjude-smc/microsync#firmware-upload>`_.
+See the :doc:`../installation#firmware-upload` section in the installation guide.
 
 Troubleshooting
 ---------------
