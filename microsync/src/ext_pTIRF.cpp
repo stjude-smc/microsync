@@ -148,7 +148,7 @@ void start_continuous_acq(const DataPacket* data) {
 	schedule_pulse(CAMERA_PIN, cam_pulse_duration, p.start - p.cam - safety_margin, 1, 0, false);
 
     schedule_shutter_pulse(
-		data->N * p.exp + p.shutter, // duration
+		data->N * p.exp + p.cam + p.shutter, // duration
 		p.start - p.shutter,              // timestamp
 		1, 0, false);			 // just once
     	
