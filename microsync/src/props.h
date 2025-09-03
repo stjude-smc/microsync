@@ -38,7 +38,8 @@ enum SysProps {
 	wo_OPEN_SHUTTERS,              /**< Open all shutters (write-only) */
 	wo_CLOSE_SHUTTERS,             /**< Close all shutters (write-only) */
 	rw_SHUTTER_DELAY_us,           /**< Shutter delay in microseconds (read-write) */
-	rw_CAM_READOUT_us              /**< Camera readout time in microseconds (read-write) */
+	rw_CAM_READOUT_us,             /**< Camera readout time in microseconds (read-write) */
+	rw_CAM_GLOBAL_RESET,           /**< Camera global reset in level trigger mode (read-write) */
 };
 
 /**

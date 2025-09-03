@@ -122,6 +122,7 @@ class props(Enum):
     wo_CLOSE_SHUTTERS = 12        #: Close all shutters (write-only)
     rw_SHUTTER_DELAY_us = 13      #: Shutter delay in microseconds (read-write)
     rw_CAM_READOUT_us = 14        #: Camera readout time in microseconds (read-write)
+    rw_CAM_GLOBAL_RESET = 15      #: Camera global reset in level trigger mode (read-write)
 
 ####################################################################
 #        LOGGING SERIAL PORT CLASS
@@ -1091,6 +1092,33 @@ class SyncDevice(object):
             value (int): Shutter delay time in microseconds
         """
         self.set_property(props.rw_SHUTTER_DELAY_us, value)
+
+    @property
+    def cam_global_rst(self):
+        """
+        Get the camera global reset in level trigger mode.
+       
+        Returns:
+            bool: Camera global reset in level trigger mode
+        """
+        return self.get_property(props.rw_CAM_GLOBAL_RESET)
+
+    @cam_global_rst.setter
+    def cam_global_rst(self, value):
+        """
+        Set the camera global reset in level trigger mode.
+
+        Some cameras (e.g. Hamamatsu) can be configured to issue a global
+        reset to clear the electric charge of all pixels at the same time.
+        This way, all pixels can start exposure at the same time.
+
+        This option should reflect the current configuration of the camera
+        as it affects the timing of the laser shutters in burst and ALEX modes.
+
+        Args:
+            value (bool): Camera global reset in level trigger mode
+        """
+        self.set_property(props.rw_CAM_GLOBAL_RESET, value)
 
     def start_continuous_acq(self, exp_time, N_frames, ts=0):
         """

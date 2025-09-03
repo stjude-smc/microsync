@@ -59,6 +59,7 @@ void init_props() {
 	props[wo_CLOSE_SHUTTERS]         = new FunctionProperty(nullptr, close_shutters, PropertyAccess::WriteOnly);
 	props[rw_SHUTTER_DELAY_us]       = new InternalProperty(1000UL, PropertyAccess::ReadWrite);
 	props[rw_CAM_READOUT_us]         = new InternalProperty(12000UL, PropertyAccess::ReadWrite);
+	props[rw_CAM_GLOBAL_RESET]       = new InternalProperty(0UL, PropertyAccess::ReadWrite);
 }
 
 

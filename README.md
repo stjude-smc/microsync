@@ -354,6 +354,7 @@ See [`python/sync device demo.ipynb`](python/sync%20device%20demo.ipynb) for a c
 | 12 | `close_shutters`        | Write-only | Close specified laser shutters               |
 | 13 | `shutter_delay_us`      | R/W        | Shutter delay (microseconds)                 |
 | 14 | `cam_readout_us`        | R/W        | Camera readout time (microseconds)           |
+| 15 | `cam_global_rst`        | R/W        | Global reset in level trigger mode (bool)    |
 
 ## 📖 Documentation
 
