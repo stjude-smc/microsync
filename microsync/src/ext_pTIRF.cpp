@@ -11,6 +11,7 @@
 #include <cstdint>
 #include <algorithm>
 
+
 /************************************************************************/
 /*                 HELPER FUNCTIONS                                     */
 /************************************************************************/
@@ -100,12 +101,15 @@ void schedule_shutter_pulse(uint32_t pulse_duration_us,
 	event.interv_cts = us2cts(interval_us);
 	schedule_event(&event, false);
 	
-	event.func = close_shutters_func;
-	event.ts64_cts += us2cts(pulse_duration_us);
-	schedule_event(&event, false);
+	// Only schedule closing if pulse duration is non-zero
+	if (pulse_duration_us > 0) {
+		event.func = close_shutters_func;
+		event.ts64_cts += us2cts(pulse_duration_us);
+		schedule_event(&event, false);
+	}
 }
 
-// Functions that can be used within even queue
+// Functions that can be used within event queue
 void open_shutters_func(uint32_t mask, uint32_t){open_shutters(mask);}
 void close_shutters_func(uint32_t mask, uint32_t){close_shutters(mask);}
 
@@ -116,19 +120,18 @@ void close_shutters_func(uint32_t mask, uint32_t){close_shutters(mask);}
 
 struct AcqParams {
 	uint32_t exp;
-	uint32_t cam;
+	uint32_t readout;
 	uint32_t shutter;
 	uint64_t start;
 
 	AcqParams(const DataPacket* data) {
 		exp = data->arg1;
-		cam = get_property(rw_CAM_READOUT_us);
-		shutter = get_property(rw_SHUTTER_DELAY_us);
-		// start time is either the requested timestamp or as early as possible (can't be in the past)
-		start = std::max(
-			std::max(cam, shutter),
-			data->ts_us
-		) + current_time_us() + UNIFORM_TIME_DELAY;
+		readout = get_property(rw_CAM_READOUT_us);
+		shutter = std::max(1UL, get_property(rw_SHUTTER_DELAY_us));
+		// Calculate earliest possible start time (can't be in the past!)
+		uint64_t earliest_start = std::max((uint64_t)readout, (uint64_t)shutter);  // either ASAP
+		uint64_t requested_start = (uint64_t)data->ts_us;                           // or at requested timestamp
+		start = std::max(earliest_start, requested_start) + current_time_us() + UNIFORM_TIME_DELAY;
 	}
 };
 
@@ -136,52 +139,94 @@ struct AcqParams {
 void start_continuous_acq(const DataPacket* data) {
     AcqParams p(data);
 
-	// Camera readout time cannot be longer than the exposure time in this mode
-	p.cam = std::min(p.exp, get_property(rw_CAM_READOUT_us));
+	// Safety checks
+	// camera readout time cannot be longer than the exposure time in this mode
+	p.readout = std::min(p.exp, get_property(rw_CAM_READOUT_us));
+	// reduce camera pulse duration for very short exposure times
+	uint32_t cam_pulse_duration = std::min(p.exp >> 1, (uint32_t)default_pulse_duration_us);
 
-	// In case the exposure is shorter than the default pulse duration,
-	// use half of the exposure time as the pulse duration
-	uint32_t cam_pulse_duration = std::min(p.exp/2, (uint32_t)default_pulse_duration_us);
+	uint32_t N = data->N;
 
-	// Sacrificial frame to read out the camera while we are opening the shutters
-	uint32_t safety_margin = 200; // this should be less than UNIFORM_TIME_DELAY to avoid problems
-	schedule_pulse(CAMERA_PIN, cam_pulse_duration, p.start - p.cam - safety_margin, 1, 0, false);
+	// Schedule shutter opening at p.start - p.shutter
+	// For N==0: shutters stay open indefinitely
+	// For N>0: shutters close after N frames + readout + shutter delay
+	schedule_shutter_pulse(
+		(N == 0) ? 0 : (p.exp * N + p.readout + p.shutter), // duration: 0=infinite, otherwise N frames + readout + shutter
+		p.start - p.shutter,                                // open shutters just before the first frame
+		1, 0, false);                                       // just once
 
-    schedule_shutter_pulse(
-		data->N * p.exp + p.cam + p.shutter, // duration
-		p.start - p.shutter,              // timestamp
-		1, 0, false);			 // just once
-    	
-	// N+1 pulses to trigger camera in sync mode
-    schedule_pulse(CAMERA_PIN, cam_pulse_duration, p.start,
-				   data->N + 1, p.exp, false);
+	// Sacrificial frame clears the sensor..
+	schedule_pulse(CAMERA_PIN, cam_pulse_duration, 
+		p.start - p.readout - 250UL, // ..just before first frame, with margin
+		1, 0, false);                // just once
+  	
+	// N + 1 camera pulses for N frames to acquire data, or infinite if N==0
+    schedule_pulse(CAMERA_PIN, cam_pulse_duration,
+		p.start,                 // first frame begins exactly at the start time
+		(N == 0) ? 0 : (N + 1),  // 0 means infinite
+		p.exp, false);           // the pulse interval is equal to the exposure time
 }
 
 
+// Helper function to calculate frame duration (exposure + readout + shutter delay)
+uint32_t find_strobe_frame_duration(const AcqParams& p) {
+    return p.exp + p.readout + p.shutter;
+}
+
+// Helper function to calculate burst period based on frame duration and requested interval
+uint32_t find_strobe_period(uint32_t frame_duration, uint32_t requested_interval, uint32_t multiplier = 1) {
+    return std::max(multiplier * frame_duration, requested_interval);
+}
+
+
+// Helper function to schedule camera pulses for stroboscopic acquisition, depending on the global reset property
+void schedule_camera_strobe(const AcqParams& p, uint32_t frame_start, uint32_t N, uint32_t period) {
+    uint32_t cam_pulse_duration = get_property(rw_CAM_GLOBAL_RESET) ? p.exp : p.exp + p.readout;
+    uint32_t cam_start = get_property(rw_CAM_GLOBAL_RESET) ? frame_start : frame_start - p.readout;
+    
+    schedule_pulse(CAMERA_PIN, cam_pulse_duration, cam_start, N, period, false);
+}
+
 void start_stroboscopic_acq(const DataPacket* data) {
     AcqParams p(data);
-
-    uint32_t frame_period = std::max(p.exp + p.cam + p.shutter, data->interv_us);
     
-    schedule_shutter_pulse(p.exp, p.start, data->N, frame_period, false);
-    schedule_pulse(CAMERA_PIN, p.exp, p.start + p.shutter,
-				   data->N, frame_period, false);
+    // Calculate burst period: at least exposure time + readout + shutter delay, or the requested interval
+    uint32_t frame_duration = find_strobe_frame_duration(p);
+    uint32_t burst_period = find_strobe_period(frame_duration, data->interv_us);
+    
+    // Schedule N shutter pulses, each just before the frame starts
+    schedule_shutter_pulse(p.exp, p.start - p.shutter, data->N, burst_period, false);
+
+    // Schedule N camera pulses
+    schedule_camera_strobe(p, p.start, data->N, burst_period);
 }
 
 
 void start_ALEX_acq(const DataPacket* data) {
     AcqParams p(data);
 
-    uint32_t N_ch = _count_set_bits(get_property(rw_SELECTED_LASERS));
-    uint32_t frame_duration = p.exp + p.cam + p.shutter;
-    uint32_t burst_period = std::max(N_ch * frame_duration, data->interv_us);
+    // Count enabled lasers and calculate timing
+    uint32_t N_ch = _count_set_bits(selected_lasers());
+    uint32_t frame_duration = find_strobe_frame_duration(p);
+    uint32_t burst_period = find_strobe_period(frame_duration, data->interv_us, N_ch);
 
-    uint32_t frame_start = p.start;
-    for (uint32_t i = 0; i < 4; ++i) {
-	    if (pins[shutter_pins[i]].is_active()) { // laser is enabled
-		    schedule_pulse(pins[shutter_pins[i]].pin_idx, p.exp, frame_start, data->N, burst_period, false);
-		    schedule_pulse(CAMERA_PIN, p.exp, frame_start + p.shutter, data->N, burst_period, false);
-		    frame_start += frame_duration;
+	// Schedule pulses for each enabled laser
+	for (uint32_t i = 0; i < 4; ++i) {
+	    if (pins[shutter_pins[i]].is_active()) {
+			// Laser pulse: open shutter just before frame starts, pulse for exposure duration
+		    schedule_pulse(
+				pins[shutter_pins[i]].pin_idx, // selected laser
+				p.exp, 				           // pulse duration is the exposure time
+				p.start - p.shutter,           // open shutters just before the frame starts
+				data->N,                       // N pulses for N bursts (times number of lasers)
+				burst_period,                  // once per laser per burst period
+				false);
+
+			// Camera pulse: synchronized with laser pulse
+		    schedule_camera_strobe(p, p.start, data->N, burst_period);
+
+			// Move to the next frame within the burst
+		    p.start += frame_duration;
 	    }
     }
 }

@@ -35,14 +35,28 @@ void process_events()
 	static Event event;
 	
 	_disable_event_irq();
-		while (!event_queue.empty())		{
+		while (!event_queue.empty())
+		{
 			// Keep processing events from the queue while they are pending
-			event = event_queue.top();			if (event.ts64_cts > current_time_cts() + TS_TOLERANCE_CTS)  // it's a future event			{				// Update the RA register for compare interrupt
-				tc_write_ra(SYS_TC, SYS_TC_CH, event.ts_lo32_cts);				tc_write_rc(SYS_TC, SYS_TC_CH, event.ts_lo32_cts + 1);				break;  // Our job is done			}			// Fire the event function			event.func(event.arg1, event.arg2);			event_queue.pop();  // remove the event from the queue, preserving order			if (_update_event(&event))  // Needs to be rescheduled?
+			event = event_queue.top();
+			if (event.ts64_cts > current_time_cts() + TS_TOLERANCE_CTS)  // it's a future event
+			{
+				// Update the RA register for compare interrupt
+				tc_write_ra(SYS_TC, SYS_TC_CH, event.ts_lo32_cts);
+				tc_write_rc(SYS_TC, SYS_TC_CH, event.ts_lo32_cts + 1);
+				break;  // Our job is done
+			}
+
+			// Fire the event function
+			event.func(event.arg1, event.arg2);
+			event_queue.pop();  // remove the event from the queue, preserving order
+
+			if (_update_event(&event))  // Needs to be rescheduled?
 			{
 				// Put updated event back, preserving order of the queue
 				event_queue.push(event);
-			}		}
+			}
+		}
 	_enable_event_irq();
 }
 
@@ -58,9 +72,24 @@ void init_burst_timer()
 	TC_CMR_ACPC_SET |    // set on compare event C
 	TC_CMR_WAVSEL_UP_RC    // reset timer on event C
 	);
-}// Process the event metadatastatic inline bool _update_event(Event *event)
+}
+
+// Process the event metadata
+static inline bool _update_event(Event *event)
 {
-	if (event->interv_cts >= MIN_EVENT_INTERVAL) // repeating event	{		event->ts64_cts += event->interv_cts;		if (event->N == 0){  // infinite event - reschedule			return true;		}		// if (N == 1), it was a last call, and we drop it		if (event->N > 1) {  // reschedule the event			event->N--;			return true;		}	}	return false;
+	if (event->interv_cts >= MIN_EVENT_INTERVAL) // repeating event
+	{
+		event->ts64_cts += event->interv_cts;
+		if (event->N == 0){  // infinite event - reschedule
+			return true;
+		}
+		// if (N == 1), it was a last call, and we drop it
+		if (event->N > 1) {  // reschedule the event
+			event->N--;
+			return true;
+		}
+	}
+	return false;
 }
 
 /************************************************************************/
@@ -185,7 +214,7 @@ void schedule_pulse(const DataPacket *data, bool is_positive)
 void schedule_pulse(uint32_t pin_idx, uint32_t pulse_duration_us, uint64_t timestamp_us,
                     uint32_t N, uint32_t interval_us, bool relative)
 {
-	uint64_t now_cts = (relative && sys_timer_running) ? current_time_cts() : 0;
+	uint64_t now_cts = relative ? current_time_cts() : 0;
 	
 	Event event;
 	event.func = set_pin_event_func;
