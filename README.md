@@ -265,6 +265,9 @@ The following high-level acquisition modes are provided as convenience functions
 - **Behavior:** Laser shutters remain open during entire acquisition, camera triggered at precise intervals
 - **First frame:** Automatically discarded as it contains pre-acquisition noise
 
+![](doc/pTIRF_acq_continuous.svg)
+
+The diagram below was created with `EventVisualizer` Python class that uses Bokeh to show actual events scheduled on the microcontroller.
 ![](doc/continuous_acq.svg)
 
 #### Stroboscopic/Timelapse Imaging  
@@ -272,6 +275,8 @@ The following high-level acquisition modes are provided as convenience functions
 - **Method:** `sd.start_stroboscopic_acq(exp_time, N_frames, ts=0, frame_period=0)`
 - **Behavior:** Laser pulse synchronized with camera exposure, followed by readout period
 - **Timelapse:** Optional waiting period between frames when `frame_period > 0`
+
+Image below shows stroboscopic acquisition diagram with Kinetix camera.
 
 ![](doc/stroboscopic_acq.svg)
 
@@ -283,7 +288,15 @@ The following high-level acquisition modes are provided as convenience functions
 - **Behavior:** Bursts of frames, each illuminated by different laser channel
 - **Timelapse:** Optional waiting period between bursts when `burst_period > 0`
 
+**NOTE** - stroboscopic and ALEX modes use level trigger, which behaves differently on Kinetix and Hamamatsu cameras.
+When using Kinetix camera, set it to "Level trigger overlap mode". It behaves similarly to continuous (rolling shutter) mode,
+enabling fast imaging.
+![](doc/pTIRF_acq_ALEX_level_overlap.svg)
 ![](doc/ALEX_acq.svg)
+
+When using a Hamamatsu camera, set it to "Level trigger global reset mode" and enable the `rw_CAM_GLOBAL_RESET` property to generate correct timings.
+![](doc/pTIRF_acq_ALEX_level.svg)
+![](doc/ALEX_acq_global_reset.svg)
 
 ### Status and Events
 
