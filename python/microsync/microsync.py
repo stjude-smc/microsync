@@ -122,7 +122,7 @@ class props(Enum):
     wo_CLOSE_SHUTTERS = 12        #: Close all shutters (write-only)
     rw_SHUTTER_DELAY_us = 13      #: Shutter delay in microseconds (read-write)
     rw_CAM_READOUT_us = 14        #: Camera readout time in microseconds (read-write)
-    rw_CAM_GLOBAL_RESET = 15      #: Camera global reset in level trigger mode (read-write)
+    rw_CAM_LEVEL_TRIGGER_MODE = 15  #: Camera level trigger mode: 0=NORMAL, 1=OVERLAP, 2=GLOBAL_RESET (read-write)
 
 ####################################################################
 #        LOGGING SERIAL PORT CLASS
@@ -1094,31 +1094,39 @@ class SyncDevice(object):
         self.set_property(props.rw_SHUTTER_DELAY_us, value)
 
     @property
-    def cam_global_rst(self):
+    def cam_level_trigger_mode(self):
         """
-        Get the camera global reset in level trigger mode.
+        Get the camera level trigger mode.
        
         Returns:
-            bool: Camera global reset in level trigger mode
+            int: Camera level trigger mode (0=NORMAL, 1=OVERLAP, 2=GLOBAL_RESET)
         """
-        return self.get_property(props.rw_CAM_GLOBAL_RESET)
+        return self.get_property(props.rw_CAM_LEVEL_TRIGGER_MODE)
 
-    @cam_global_rst.setter
-    def cam_global_rst(self, value):
+    @cam_level_trigger_mode.setter
+    def cam_level_trigger_mode(self, value):
         """
-        Set the camera global reset in level trigger mode.
+        Set the camera level trigger mode.
 
+        This property controls the camera's level trigger behavior:
+        - 0 (NORMAL): Standard level trigger mode
+        - 1 (OVERLAP): Overlap mode for Kinetix cameras
+        - 2 (GLOBAL_RESET): Global reset mode where camera immediately clears sensor when triggered for Hamamatsu cameras
+        
         Some cameras (e.g. Hamamatsu) can be configured to issue a global
         reset to clear the electric charge of all pixels at the same time.
         This way, all pixels can start exposure at the same time.
+
+        Other cameras, like Kinetix, support overlap mode when the next frame can
+        begin before the previous frame is read out.
 
         This option should reflect the current configuration of the camera
         as it affects the timing of the laser shutters in burst and ALEX modes.
 
         Args:
-            value (bool): Camera global reset in level trigger mode
+            value (int): Camera level trigger mode (0, 1, or 2)
         """
-        self.set_property(props.rw_CAM_GLOBAL_RESET, value)
+        self.set_property(props.rw_CAM_LEVEL_TRIGGER_MODE, value)
 
     def start_continuous_acq(self, exp_time, N_frames, ts=0):
         """

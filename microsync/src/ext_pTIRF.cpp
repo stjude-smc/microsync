@@ -179,11 +179,27 @@ uint32_t find_strobe_period(uint32_t frame_duration, uint32_t requested_interval
 }
 
 
-// Helper function to schedule camera pulses for stroboscopic acquisition, depending on the global reset property
+// Helper function to schedule camera pulses for stroboscopic acquisition, depending on the level trigger mode property
 void schedule_camera_strobe(const AcqParams& p, uint32_t frame_start, uint32_t N, uint32_t period) {
-    uint32_t cam_pulse_duration = get_property(rw_CAM_GLOBAL_RESET) ? p.exp : p.exp + p.readout;
-    uint32_t cam_start = get_property(rw_CAM_GLOBAL_RESET) ? frame_start : frame_start - p.readout;
-    
+	uint32_t cam_pulse_duration;
+	uint32_t cam_start;
+
+	switch (get_property(rw_CAM_LEVEL_TRIGGER_MODE)) {
+		case LVL_TRG_NORMAL: // LVL_TRG_NORMAL is the fall back mode
+		default: 
+			cam_pulse_duration = p.exp + 2*p.readout;
+			cam_start = frame_start - p.readout;
+			break;
+		case LVL_TRG_OVERLAP:
+			cam_pulse_duration = p.exp + p.readout;
+			cam_start = frame_start - p.readout;
+			break;
+		case LVL_TRG_GLOBAL_RESET:
+			cam_pulse_duration = p.exp + p.readout;
+			cam_start = frame_start - p.readout;
+			break;
+	}
+
     schedule_pulse(CAMERA_PIN, cam_pulse_duration, cam_start, N, period, false);
 }
 

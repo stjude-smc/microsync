@@ -289,12 +289,11 @@ Image below shows stroboscopic acquisition diagram with Kinetix camera.
 - **Timelapse:** Optional waiting period between bursts when `burst_period > 0`
 
 **NOTE** - stroboscopic and ALEX modes use level trigger, which behaves differently on Kinetix and Hamamatsu cameras.
-When using Kinetix camera, set it to "Level trigger overlap mode". It behaves similarly to continuous (rolling shutter) mode,
-enabling fast imaging.
+When using Kinetix camera, set the camera triggering mode to "Level trigger overlap mode". It behaves similarly to continuous (rolling shutter) mode, enabling fast imaging. You will have to set Microsync `rw_CAM_LEVEL_TRIGGER_MODE` property to 1 (OVERLAP) to generate correct timings.
 ![](doc/pTIRF_acq_ALEX_level_overlap.svg)
 ![](doc/ALEX_acq.svg)
 
-When using a Hamamatsu camera, set it to "Level trigger global reset mode" and enable the `rw_CAM_GLOBAL_RESET` property to generate correct timings.
+When using a Hamamatsu camera, set it to "Level trigger global reset mode" and set the `rw_CAM_LEVEL_TRIGGER_MODE` property to 2 (GLOBAL_RESET) to generate correct timings.
 ![](doc/pTIRF_acq_ALEX_level.svg)
 ![](doc/ALEX_acq_global_reset.svg)
 

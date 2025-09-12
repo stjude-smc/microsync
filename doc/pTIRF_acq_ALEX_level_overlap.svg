@@ -248,7 +248,7 @@
          id="tspan4"><tspan
            rotate="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0"
            id="tspan3"
-           style="font-style:italic;font-size:4.24558px;fill:#000000;stroke:none;stroke-width:0.13483">rw_CAM_GLOBAL_RESET=false</tspan></tspan></text>
+           style="font-style:italic;font-size:4.24558px;fill:#000000;stroke:none;stroke-width:0.13483">rw_CAM_LEVEL_TRIGGER_MODE=1</tspan></tspan></text>
     <path
        style="fill:#ffff00;stroke:#800000;stroke-width:0.13483"
        d="m 946.68659,90.412977 20.32425,35.551843 H 936.46351 L 916.13927,90.412977 Z"
