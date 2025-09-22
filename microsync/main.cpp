@@ -161,9 +161,9 @@ int main() {
 
 		poll_uart();
 
-		// Indicates execution of the main loop
-		err_led_on();
-		err_led_off();
+		// Indicates execution of the main loop (for monitoring with an oscilloscope)
+		dbg_pin_up();
+		dbg_pin_dn();
 
 		wdt_restart(WDT); // Kick the watchdog
 	}
