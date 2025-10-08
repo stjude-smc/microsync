@@ -12,7 +12,7 @@ from pathlib import Path
 
 def get_version():
     """Get version from __version__.py"""
-    version_file = Path("python/__version__.py")
+    version_file = Path("python/microsync/__version__.py")
     if not version_file.exists():
         raise FileNotFoundError(f"Version file not found: {version_file}")
     
@@ -99,7 +99,7 @@ Upload `microsync-{version}.bin` to your Arduino Due using BOSSA or Atmel-ICE wi
 1. Download BOSSA from https://github.com/shumatech/BOSSA/releases (pick the right binary for your OS).
 2. Connect Due to your computer, use the USB port next to the power jack.
 3. Find newly created Arduino Due COM port (e.g. in the Device manager).
-4. On your Due, press **Erase** and **Reset** buttons at the same time (to enter programming mode).
+4. On your Due, press and hold **Erase** button for at least 0.5 seconds. This will wipe the current firmware and the microcontroller will enter the programming mode.
 
 
 #### Upload via BOSSA GUI

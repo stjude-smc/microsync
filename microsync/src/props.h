@@ -38,7 +38,19 @@ enum SysProps {
 	wo_OPEN_SHUTTERS,              /**< Open all shutters (write-only) */
 	wo_CLOSE_SHUTTERS,             /**< Close all shutters (write-only) */
 	rw_SHUTTER_DELAY_us,           /**< Shutter delay in microseconds (read-write) */
-	rw_CAM_READOUT_us              /**< Camera readout time in microseconds (read-write) */
+	rw_CAM_READOUT_us,             /**< Camera readout time in microseconds (read-write) */
+	rw_CAM_LEVEL_TRIGGER_MODE,     /**< Camera level trigger mode: 0=NORMAL, 1=OVERLAP, 2=GLOBAL_RESET (read-write) */
+};
+
+/**
+ * @brief Camera level trigger mode enumeration.
+ * 
+ * Defines the available camera level trigger modes.
+ */
+enum CamLevelTriggerMode {
+	LVL_TRG_NORMAL = 0,        /**< Standard level trigger mode */
+	LVL_TRG_OVERLAP = 1,       /**< Overlap mode for Kinetix cameras */
+	LVL_TRG_GLOBAL_RESET = 2   /**< Global reset mode for Hamamatsu cameras */
 };
 
 /**

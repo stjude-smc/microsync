@@ -249,10 +249,18 @@ void pause_sys_timer();
  */
 extern volatile bool sys_timer_running;
 
+/**
+ * @brief Get current system time in native timer counts, including overflows.
+ * @return Current system time in timer counts
+ * 
+ * Returns the current system time in native timer counts.
+ * Uses the system timer and overflow counter for 64-bit precision.
+ */
 inline uint64_t current_time_cts()
 {
-	return sys_tc_ovf_count | SYS_TC->TC_CHANNEL[SYS_TC_CH].TC_CV;
+	return (uint64_t) sys_timer_running * (sys_tc_ovf_count | SYS_TC->TC_CHANNEL[SYS_TC_CH].TC_CV);
 }
+
 /**
  * @brief Get current system time in microseconds.
  * @return Current system time in microseconds

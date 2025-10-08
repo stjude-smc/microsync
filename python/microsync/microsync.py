@@ -1,11 +1,11 @@
-from __version__ import __version__
-from constants import ms, MHz, UNIFORM_TIME_DELAY
+from .__version__ import __version__
+from .constants import ms, MHz, UNIFORM_TIME_DELAY
 from ctypes import c_int32
 from ctypes import c_uint16
 from ctypes import c_uint32
 from ctypes import c_uint8
 from enum import Enum
-from rev_pin_map import rev_pin_map
+from .rev_pin_map import rev_pin_map
 from serial import Serial, SerialException
 import ctypes
 import datetime
@@ -122,6 +122,7 @@ class props(Enum):
     wo_CLOSE_SHUTTERS = 12        #: Close all shutters (write-only)
     rw_SHUTTER_DELAY_us = 13      #: Shutter delay in microseconds (read-write)
     rw_CAM_READOUT_us = 14        #: Camera readout time in microseconds (read-write)
+    rw_CAM_LEVEL_TRIGGER_MODE = 15  #: Camera level trigger mode: 0=NORMAL, 1=OVERLAP, 2=GLOBAL_RESET (read-write)
 
 ####################################################################
 #        LOGGING SERIAL PORT CLASS
@@ -281,8 +282,8 @@ class Event:
         if f in ["SET_PIN", "TGL_PIN"]:
             arg1 = rev_pin_map[arg1]
         return (f"{f}({arg1:<3}, {self.arg2:<3}) at " 
-              + f"t={self.ts:>11}{self.unit}. Call "
-              + f"{self.N:>6} times every {self.intvl:>10} {self.unit}")
+              + f"t={round(self.ts):>11}{self.unit}. Call "
+              + f"{self.N:>6} times every {round(self.intvl):>10} {self.unit}")
 
     def map_func(self, func_map):
         """
@@ -291,6 +292,45 @@ class Event:
         to the corresponding function name for pretty printing of the event table.
         """
         self.func = func_map[str(self.func)]
+    
+    def expand_repeating_events(self):
+        """
+        Expand repeating events into their full sequence.
+        
+        Returns:
+            list: List of Event objects representing all instances of repeating events
+        """
+        if self.N > 1 and self.intvl > 0:
+            # Repeating event - create N instances
+            expanded_events = []
+            for i in range(self.N):
+                expanded_event = type('Event', (), {
+                    'ts': self.ts + i * self.intvl,
+                    'arg1': self.arg1,
+                    'arg2': self.arg2,
+                    'func': self.func,
+                    'N': 1,
+                    'intvl': 0
+                })()
+                expanded_events.append(expanded_event)
+            return expanded_events
+        elif self.N == 0 and self.intvl > 0:
+            # Infinite repeating event - expand to 1000 instances for visualization
+            expanded_events = []
+            for i in range(1000):
+                expanded_event = type('Event', (), {
+                    'ts': self.ts + i * self.intvl,
+                    'arg1': self.arg1,
+                    'arg2': self.arg2,
+                    'func': self.func,
+                    'N': 1,
+                    'intvl': 0
+                })()
+                expanded_events.append(expanded_event)
+            return expanded_events
+        else:
+            # Single event
+            return [self]
 
 
 
@@ -874,10 +914,60 @@ class SyncDevice(object):
             e.ts -= us2cts(UNIFORM_TIME_DELAY, presc)
             if unit in ["us", "ms"]:
                 e.unit = unit
-                e.ts = round(cts2us(e.ts, presc)*(0.001 if unit == "ms" else 1))
-                e.intvl = round(cts2us(e.intvl, presc)*(0.001 if unit == "ms" else 1))
+                e.ts = cts2us(e.ts, presc)*(0.001 if unit == "ms" else 1)
+                e.intvl = cts2us(e.intvl, presc)*(0.001 if unit == "ms" else 1)
             events.append(e)
         return events
+
+
+    def show_events(self, title=None):
+        """
+        Retrieve and visualize scheduled events from the device (always in microseconds).
+        
+        Args:
+            title (str, optional): Custom title for the plot
+        
+        Returns:
+            bokeh.plotting.figure.Figure: Interactive Bokeh plot
+        
+        Example:
+            >>> fig = sd.show_events()
+            >>> # In Jupyter notebook, the plot will be displayed automatically
+            >>> # To save: fig.save_plot("events.html")  # or .png, .svg
+        """
+        # Get events from device (always in microseconds)
+        events = self.get_events("ms")
+        if not events:
+            print("No events scheduled on device")
+            return None
+        
+        # Import and create visualizer
+        from .event_visualizer import EventVisualizer, enable_jupyter_notebook, display_plot
+        visualizer = EventVisualizer(shutter_delay_ms=getattr(self, 'shutter_delay_us', 1000)/1000)
+        
+        # Enable Jupyter notebook output
+        enable_jupyter_notebook()
+        
+        # Create interactive plot
+        plot = visualizer.create_plot(events, title)
+        
+        # Display the plot in Jupyter
+        display_plot(plot)
+        
+        # Create a wrapper class to add save functionality
+        class PlotWrapper:
+            def __init__(self, plot, visualizer):
+                self.plot = plot
+                self.visualizer = visualizer
+            
+            def save_plot(self, filename, format=None):
+                return self.visualizer.save_plot(self.plot, filename, format)
+            
+            def __getattr__(self, name):
+                # Delegate all other attributes to the original plot
+                return getattr(self.plot, name)
+        
+        return PlotWrapper(plot, visualizer)
 
     ## pTIRF extension
     def open_shutters(self, mask=0):
@@ -1003,6 +1093,41 @@ class SyncDevice(object):
         """
         self.set_property(props.rw_SHUTTER_DELAY_us, value)
 
+    @property
+    def cam_level_trigger_mode(self):
+        """
+        Get the camera level trigger mode.
+       
+        Returns:
+            int: Camera level trigger mode (0=NORMAL, 1=OVERLAP, 2=GLOBAL_RESET)
+        """
+        return self.get_property(props.rw_CAM_LEVEL_TRIGGER_MODE)
+
+    @cam_level_trigger_mode.setter
+    def cam_level_trigger_mode(self, value):
+        """
+        Set the camera level trigger mode.
+
+        This property controls the camera's level trigger behavior:
+        - 0 (NORMAL): Standard level trigger mode
+        - 1 (OVERLAP): Overlap mode for Kinetix cameras
+        - 2 (GLOBAL_RESET): Global reset mode where camera immediately clears sensor when triggered for Hamamatsu cameras
+        
+        Some cameras (e.g. Hamamatsu) can be configured to issue a global
+        reset to clear the electric charge of all pixels at the same time.
+        This way, all pixels can start exposure at the same time.
+
+        Other cameras, like Kinetix, support overlap mode when the next frame can
+        begin before the previous frame is read out.
+
+        This option should reflect the current configuration of the camera
+        as it affects the timing of the laser shutters in burst and ALEX modes.
+
+        Args:
+            value (int): Camera level trigger mode (0, 1, or 2)
+        """
+        self.set_property(props.rw_CAM_LEVEL_TRIGGER_MODE, value)
+
     def start_continuous_acq(self, exp_time, N_frames, ts=0):
         """
         Start continuous acquisition mode.
@@ -1083,3 +1208,6 @@ class SyncDevice(object):
                 if rev_pin_map[event.arg1] == "A12":
                     return event.N
         return 0
+
+# Export EventVisualizer for direct import
+from .event_visualizer import EventVisualizer

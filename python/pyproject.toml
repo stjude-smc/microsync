@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "microsync"
-version = "2.4.0"
+dynamic = ["version", "dependencies"]
 description = "Python driver for 32-bit microscope synchronization device."
 license = {text = "Apache 2.0"}
 authors = [
@@ -39,9 +39,6 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 requires-python = ">=3.7"
-dependencies = [
-    "pyserial>=3.0",
-]
 
 [project.optional-dependencies]
 dev = [
@@ -59,5 +56,11 @@ Documentation = "https://stjude-smc.github.io/microsync/"
 [project.scripts]
 microsync = "microsync:main"
 
-[tool.setuptools]
-py-modules = ["microsync", "constants", "rev_pin_map", "__version__"] 
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["microsync*"]
+exclude = ["tests*", "build*", "dist*", "*.egg-info*"]
+
+[tool.setuptools.dynamic]
+version = {attr = "microsync.__version__.__version__"}
+dependencies = {file = "requirements.txt"} 

@@ -87,27 +87,44 @@ Build the Firmware
    - Press F7 or use Build → Build Solution
    - Verify successful compilation
 
-Upload to Arduino Due
-^^^^^^^^^^^^^^^^^^^^^
+Firmware Upload
+^^^^^^^^^^^^^^
 
-**Method 1: Using Atmel ICE Debugger (Recommended)**
+Upload `microsync-<x.y.z>.bin` to your Arduino Due using BOSSA or Atmel-ICE with Microchip Studio.
 
-1. Connect Atmel ICE to Arduino Due via JTAG interface
-2. In Microchip Studio, go to Tools → External Tools
-3. Configure ArduinoBootloader tool:
+**Method 1: Using BOSSA (Recommended - No Extra Hardware Required)**
 
-   .. code-block:: text
+1. Download BOSSA from https://github.com/shumatech/BOSSA/releases (pick the right binary for your OS)
+2. Connect Due to your computer, use the USB port next to the power jack
+3. Find newly created Arduino Due COM port (e.g. in the Device manager)
+4. On your Due, press and hold **Erase** button for at least 0.5 seconds. This will wipe the current firmware and the microcontroller will enter the programming mode
 
-      Executable: C:\Program Files (x86)\Arduino\hardware\tools\avr\bin\avrdude.exe
-      Arguments: -C"C:\Program Files (x86)\Arduino\hardware\tools\avr\etc\avrdude.conf" -v -patmega2560 -cwiring -PCOM11 -b115200 -D -Uflash:w:"$(ProjectDir)Release\$(TargetName).hex":i
+**Upload via BOSSA GUI:**
 
-4. Run the tool to upload firmware
+1. Run BOSSA GUI
+2. Select the correct COM port
+3. Select `microsync-<x.y.z>.bin` file
+4. **Important**: Check the "Boot from Flash" option (this sets GPNVM0=1)
+5. Click "Write"
 
-**Method 2: Using Arduino IDE (Alternative)**
+**Upload via command line:**
 
-1. Open Arduino IDE
-2. Set board to "Arduino Due (Programming Port)"
-3. Upload the compiled .hex file
+1. Put `bossac.exe` (or `bossac` on Mac/Linux) and `microsync-<x.y.z>.bin` in the same folder
+2. Open a terminal in that folder and run (replace `<COM-PORT>` with the actual COM port of your Due):
+
+   .. code-block:: sh
+
+      bossac.exe -e -w -v -b microsync-<x.y.z>.bin -p <COM-PORT>
+
+**Method 2: Using Microchip Studio with Atmel-ICE Debugger**
+
+1. Connect Atmel-ICE SAM connector to JTAG header on your Due
+2. Connect Atmel-ICE to your computer
+3. Power up your Due with a USB cable
+4. Open Microchip Studio
+5. Open the Device Programming dialog (Ctrl+Shift+P)
+6. Select Atmel-ICE tool, `ATSAM3X8E` device, JTAG interface, click "Apply"
+7. Go to "Memory" tab, select `microsync-{version}.bin` file, click "Program"
 
 Hardware Setup
 --------------

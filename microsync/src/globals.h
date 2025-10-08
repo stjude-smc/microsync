@@ -10,7 +10,7 @@
 #include "pins.h"
 #endif
 
-#define VERSION "2.4.0"
+#define VERSION "2.5.1"
 
 
 /************************************************************************/
@@ -24,7 +24,7 @@
 
 const uint32_t shutter_pins[] = { CY2_PIN, CY3_PIN, CY5_PIN, CY7_PIN };
 	
-#define CAMERA_PIN  PIO_PB15_IDX    // A12
+#define CAMERA_PIN  PIO_PB15_IDX    // A12 aka DAC2/D66
 
 // Error indicator trigger
 #define ERR_PIN		PIO_PB14_IDX	// D53

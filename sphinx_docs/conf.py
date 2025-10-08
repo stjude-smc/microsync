@@ -22,7 +22,10 @@ author = 'Roman Kiselev'
 
 # The full version, including alpha/beta/rc tags
 # Import version from the package
-from __version__ import __version__
+import sys
+import os
+sys.path.insert(0, os.path.abspath('../python'))
+from microsync.__version__ import __version__
 release = __version__
 version = __version__
 

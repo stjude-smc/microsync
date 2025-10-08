@@ -52,13 +52,14 @@ uint32_t selected_lasers();
 
 /**
  * @brief Schedule a shutter pulse event.
- * @param pulse_duration_us Duration of the pulse in microseconds
+ * @param pulse_duration_us Duration of the pulse in microseconds (0 = keep open indefinitely)
  * @param timestamp_us Timestamp for the pulse in microseconds
  * @param N Number of pulses to generate
  * @param interval_us Interval between pulses in microseconds
  * @param relative If true, timestamp is relative to current time
  * 
  * Schedules a series of shutter pulses with the specified parameters.
+ * If pulse_duration_us is 0, only opening events are scheduled (shutters stay open).
  */
 void schedule_shutter_pulse(uint32_t pulse_duration_us, uint64_t timestamp_us, uint32_t N, uint32_t interval_us, bool relative);
 

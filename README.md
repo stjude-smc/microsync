@@ -1,6 +1,6 @@
 # `microsync` — Microscope Control with Microsecond Precision
 
-**Version:** 2.4.0  
+**Version:** 2.4.1  
 **Author:** Roman Kiselev  
 **License:** Apache 2.0  
 **URL:** [https://github.com/stjude-smc/microsync](https://github.com/stjude-smc/microsync)
@@ -47,6 +47,7 @@ The device connects to your computer via UART (115,200 baud). All timing and pin
 - **Priority event queue** with hardware-timed execution
 - **Laser shutter and interlock safety logic**
 - **Support for advanced acquisition modes** (continuous, stroboscopic, ALEX)
+- **Interactive event visualization** with Bokeh (zoom, pan, hover tooltips)
 - **Comprehensive Python API** with logging and context management
 - **Extensive examples and documentation in Jupyter notebook**
 
@@ -74,8 +75,7 @@ Upload `microsync-<x.y.z>.bin` to your Arduino Due using BOSSA or Atmel-ICE with
 1. Download BOSSA from https://github.com/shumatech/BOSSA/releases (pick the right binary for your OS).
 2. Connect Due to your computer, use the USB port next to the power jack.
 3. Find newly created Arduino Due COM port (e.g. in the Device manager).
-4. On your Due, press **Erase** and **Reset** buttons at the same time (to enter programming mode).
-
+4. On your Due, press and hold **Erase** button for at least 0.5 seconds. This will wipe the current firmware and the microcontroller will enter the programming mode.
 
 #### Upload via BOSSA GUI
 1. Run BOSSA GUI.
@@ -265,11 +265,20 @@ The following high-level acquisition modes are provided as convenience functions
 - **Behavior:** Laser shutters remain open during entire acquisition, camera triggered at precise intervals
 - **First frame:** Automatically discarded as it contains pre-acquisition noise
 
+![](doc/pTIRF_acq_continuous.svg)
+
+The diagram below was created with `EventVisualizer` Python class that uses Bokeh to show actual events scheduled on the microcontroller.
+![](doc/continuous_acq.svg)
+
 #### Stroboscopic/Timelapse Imaging  
 - **Use case:** Brief laser illumination during each camera exposure
 - **Method:** `sd.start_stroboscopic_acq(exp_time, N_frames, ts=0, frame_period=0)`
 - **Behavior:** Laser pulse synchronized with camera exposure, followed by readout period
 - **Timelapse:** Optional waiting period between frames when `frame_period > 0`
+
+Image below shows stroboscopic acquisition diagram with Kinetix camera.
+
+![](doc/stroboscopic_acq.svg)
 
 #### ALEX (Alternating Laser Excitation)
 
@@ -279,10 +288,39 @@ The following high-level acquisition modes are provided as convenience functions
 - **Behavior:** Bursts of frames, each illuminated by different laser channel
 - **Timelapse:** Optional waiting period between bursts when `burst_period > 0`
 
+**NOTE** - stroboscopic and ALEX modes use level trigger, which behaves differently on Kinetix and Hamamatsu cameras.
+When using Kinetix camera, set the camera triggering mode to "Level trigger overlap mode". It behaves similarly to continuous (rolling shutter) mode, enabling fast imaging. You will have to set Microsync `rw_CAM_LEVEL_TRIGGER_MODE` property to 1 (OVERLAP) to generate correct timings.
+![](doc/pTIRF_acq_ALEX_level_overlap.svg)
+![](doc/ALEX_acq.svg)
+
+When using a Hamamatsu camera, set it to "Level trigger global reset mode" and set the `rw_CAM_LEVEL_TRIGGER_MODE` property to 2 (GLOBAL_RESET) to generate correct timings.
+![](doc/pTIRF_acq_ALEX_level.svg)
+![](doc/ALEX_acq_global_reset.svg)
+
 ### Status and Events
 
 - **Get all scheduled events:** `sd.get_events(unit="us"|"ms")`
 - **Check frames left:** `sd.N_frames_left()`
+
+### Interactive Event Visualization
+
+The `show_events()` method provides interactive visualization of scheduled events using Bokeh:
+
+```python
+# Create interactive plot
+plot = sd.show_events()
+
+# In Jupyter notebook, plot displays automatically
+# Save to file
+plot.save_plot("events.html")  # Interactive HTML
+plot.save_plot("events.png")   # Static PNG
+plot.save_plot("events.svg")   # Vector SVG
+```
+
+**Features:**
+- **Interactive zoom and pan** - Examine precise timing details
+- **Hover tooltips** - See exact timestamps and durations
+- **State-based visualization** - Gray boxes show active states (HIGH pins, open shutters)
 
 ### Timing Configuration
 
@@ -328,6 +366,7 @@ See [`python/sync device demo.ipynb`](python/sync%20device%20demo.ipynb) for a c
 | 12 | `close_shutters`        | Write-only | Close specified laser shutters               |
 | 13 | `shutter_delay_us`      | R/W        | Shutter delay (microseconds)                 |
 | 14 | `cam_readout_us`        | R/W        | Camera readout time (microseconds)           |
+| 15 | `cam_global_rst`        | R/W        | Global reset in level trigger mode (bool)    |
 
 ## 📖 Documentation
 
