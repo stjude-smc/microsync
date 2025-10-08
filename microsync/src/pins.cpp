@@ -150,7 +150,7 @@ void init_pins()
 			case INTLCK_OUT:
 			break;
 			case INTLCK_IN:
-				ioport_set_pin_mode(INTLCK_IN, IOPORT_MODE_PULLUP);
+				ioport_set_pin_mode(INTLCK_IN, 0); // Disable pull-up resistor
 				ioport_set_pin_dir(INTLCK_IN, IOPORT_DIR_INPUT);
 			break;
 			
