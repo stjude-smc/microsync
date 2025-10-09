@@ -126,9 +126,10 @@ uint32_t pin_name_to_ioport_id(const uint32_t pin_name_uint32) {
 		}
 	}
 
-	// Return 0 if pin name is not found
+	// Return INVALID_PIN_IDX if pin name is not found
 	printf("ERR: Could not find pin %s\n", pin_name);
-	return 0;
+	err_led_on();
+	return INVALID_PIN_IDX;
 }
 
 // Initialize predefined pins for camera and laser shutters

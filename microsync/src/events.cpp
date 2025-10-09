@@ -177,6 +177,13 @@ void schedule_pin(const DataPacket *data)
 
 	// Convert pin name to ioport index for the event function
 	event_p->arg1 = pin_name_to_ioport_id(data->arg1);
+	
+	// Check if pin name was valid
+	if (event_p->arg1 == INVALID_PIN_IDX) {
+		delete event_p;
+		err_led_on();
+		return;
+	}
 
 	schedule_event(event_p);
 	delete event_p;
@@ -192,6 +199,13 @@ void schedule_pulse(const DataPacket *data, bool is_positive)
 
 	// Convert pin name to ioport index for the event function
 	event_p->arg1 = pin_name_to_ioport_id(data->arg1);
+	
+	// Check if pin name was valid
+	if (event_p->arg1 == INVALID_PIN_IDX) {
+		delete event_p;
+		return;
+	}
+	
 	event_p->arg2 = is_positive ? 1 : 0;
 
 	// Schedule front of the pulse
@@ -240,6 +254,12 @@ void schedule_toggle(const DataPacket *data)
 
 	// Convert pin name to ioport index for the event function
 	event_p->arg1 = pin_name_to_ioport_id(data->arg1);
+	
+	// Check if pin name was valid
+	if (event_p->arg1 == INVALID_PIN_IDX) {
+		delete event_p;
+		return;
+	}
 
 	schedule_event(event_p);
 	delete event_p;
@@ -276,6 +296,12 @@ void schedule_enable_pin(const DataPacket *data)
 
 	// Convert pin name to ioport index for the event function
 	event_p->arg1 = pin_name_to_ioport_id(data->arg1);
+	
+	// Check if pin name was valid
+	if (event_p->arg1 == INVALID_PIN_IDX) {
+		delete event_p;
+		return;
+	}
 
 	schedule_event(event_p);
 	delete event_p;
@@ -287,6 +313,12 @@ void schedule_disable_pin(const DataPacket *data)
 
 	// Convert pin name to ioport index for the event function
 	event_p->arg1 = pin_name_to_ioport_id(data->arg1);
+	
+	// Check if pin name was valid
+	if (event_p->arg1 == INVALID_PIN_IDX) {
+		delete event_p;
+		return;
+	}
 
 	schedule_event(event_p);
 	delete event_p;
