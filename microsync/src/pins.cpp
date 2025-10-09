@@ -167,6 +167,11 @@ void init_pins()
 	// We set PC26 as input and disable pull-up resistor
 	ioport_set_pin_mode(PIO_PC26_IDX, 0);
 	ioport_set_pin_dir(PIO_PC26_IDX, IOPORT_DIR_INPUT);
+
+	// D10 is hardwired to both PA28 and PC29;
+	// We set PC29 as input and disable pull-up resistor
+	ioport_set_pin_mode(PIO_PC29_IDX, 0);
+	ioport_set_pin_dir(PIO_PC29_IDX, IOPORT_DIR_INPUT);
 }
 
 
