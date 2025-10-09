@@ -17,9 +17,8 @@ Pin pins[107];
 
 // Arduino Due pin mapping table (digital and analog pins)
 const pin_map_t pin_map[] = {
-	{"D0", PIO_PA8_IDX},     // Digital pin D0 -> PA8
-	{"D1", PIO_PA9_IDX},
-	{"D2", PIO_PB25_IDX},
+	// D0 and D1 are used by UART for communication
+	{"D2", PIO_PB25_IDX},  // Digital pin D2 -> PB25
 	{"D3", PIO_PC28_IDX},
 	{"D4", PIO_PA29_IDX},
 	{"D5", PIO_PC25_IDX},
@@ -161,6 +160,12 @@ void init_pins()
 				p->set_level(false);
 		}
 	}
+
+	/* Arduino Due pin quirks */
+	// D4 is hardwired to both PA29 and PC26;
+	// We set PC26 as input and disable pull-up resistor
+	ioport_set_pin_mode(PIO_PC26_IDX, 0);
+	ioport_set_pin_dir(PIO_PC26_IDX, IOPORT_DIR_INPUT);
 }
 
 
