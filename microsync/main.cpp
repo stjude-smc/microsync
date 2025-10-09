@@ -156,7 +156,6 @@ int main() {
 		{
 			err_led_on();
 			process_events();  // <- internally sets RA to timestamp of the next event
-			err_led_off();
 		}
 
 		poll_uart();
