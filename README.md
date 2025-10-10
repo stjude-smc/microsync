@@ -1,6 +1,5 @@
 # `microsync` — Microscope Control with Microsecond Precision
 
-**Version:** 2.4.1  
 **Author:** Roman Kiselev  
 **License:** Apache 2.0  
 **URL:** [https://github.com/stjude-smc/microsync](https://github.com/stjude-smc/microsync)
