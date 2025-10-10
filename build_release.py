@@ -22,6 +22,22 @@ def get_version():
     
     return locals()['__version__']
 
+def get_firmware_version():
+    """Get firmware version from microsync/src/globals.h"""
+    globals_file = Path("microsync/src/globals.h")
+    if not globals_file.exists():
+        raise FileNotFoundError(f"Globals file not found: {globals_file}")
+    
+    # Read the file and extract the VERSION define
+    with open(globals_file, 'r') as f:
+        for line in f:
+            if line.strip().startswith('#define VERSION'):
+                # Extract version string from: #define VERSION "2.5.3"
+                version = line.split('"')[1]
+                return version
+    
+    raise ValueError("VERSION not found in globals.h")
+
 def run_command(cmd, cwd=None):
     """Run a command and return success status."""
     print(f"Running: {cmd}")
@@ -41,10 +57,13 @@ def main():
             else:
                 item.unlink()
 
-    # Get version from single source of truth
+    # Get versions
     try:
-        version = get_version()
-        print(f"Building microsync v{version} release artifacts...")
+        python_version = get_version()
+        firmware_version = get_firmware_version()
+        print(f"Building microsync release artifacts...")
+        print(f"  Python driver version: {python_version}")
+        print(f"  Firmware version:      {firmware_version}")
     except Exception as e:
         print(f"Error getting version: {e}")
         return False
@@ -57,7 +76,7 @@ def main():
     print("\n1. Copying firmware...")
     firmware_src = Path("microsync/Release/microsync.bin")
     if firmware_src.exists():
-        dest_file = os.path.join(release_dir, f"microsync-{version}.bin")
+        dest_file = os.path.join(release_dir, f"microsync-{firmware_version}.bin")
         shutil.copy2(firmware_src, dest_file)
         print(f"Copied: {dest_file}")
     else:
@@ -81,18 +100,20 @@ def main():
     
     # Create release notes template
     print("\n3. Creating release notes document...")
-    release_notes = release_dir / f"RELEASE_NOTES-{version}.md"
+    release_notes = release_dir / f"RELEASE_NOTES-{firmware_version}.md"
     with open(release_notes, 'w') as f:
-        f.write(f"""# microsync v{version} Release Notes
+        f.write(f"""# microsync Release Notes
+Python driver: v{python_version}
+Firmware: v{firmware_version}
 
 
 ## Python Driver Installation
 ```bash
-pip install microsync-{version}-py3-none-any.whl
+pip install microsync-{python_version}-py3-none-any.whl
 ```
 
 ## Firmware Upload
-Upload `microsync-{version}.bin` to your Arduino Due using BOSSA or Atmel-ICE with Microchip Studio.
+Upload `microsync-{firmware_version}.bin` to your Arduino Due using BOSSA or Atmel-ICE with Microchip Studio.
 
 ### Uploading firmware with BOSSA
 
@@ -105,16 +126,16 @@ Upload `microsync-{version}.bin` to your Arduino Due using BOSSA or Atmel-ICE wi
 #### Upload via BOSSA GUI
 1. Run BOSSA GUI.
 2. Select the correct COM port.
-3. Select `microsync-{version}.bin` file.
+3. Select `microsync-{firmware_version}.bin` file.
 4. **Important**: Check the "Boot from Flash" option (this sets GPNVM0=1).
 5. Click "Write".
 
 #### Upload via command line
-1. Put `bossac.exe` (or `bossac` on Mac/Linux) and `microsync-{version}.bin` in the same folder.
+1. Put `bossac.exe` (or `bossac` on Mac/Linux) and `microsync-{firmware_version}.bin` in the same folder.
 2. Open a terminal in that folder and run (replace `<COM-PORT>` with the actual COM port of your Due):
 
 ```sh
-bossac.exe -e -w -v -b microsync-{version}.bin -p <COM-PORT>
+bossac.exe -e -w -v -b microsync-{firmware_version}.bin -p <COM-PORT>
 ```
 
 
@@ -125,7 +146,7 @@ bossac.exe -e -w -v -b microsync-{version}.bin -p <COM-PORT>
 4. Open Microchip Studio.
 5. Open the Device Programming dialog (Ctrl+Shift+P).
 6. Select Atmel-ICE tool, `ATSAM3X8E` device, JTAG interface, click "Apply".
-7. Go to "Memory" tab, select `microsync-{version}.bin` file, click "Program".
+7. Go to "Memory" tab, select `microsync-{firmware_version}.bin` file, click "Program".
 
 
 ## Documentation
@@ -141,8 +162,8 @@ Visit https://stjude-smc.github.io/microsync/ for the latest documentation.
             print(f"  - {file.name}/ (directory)")
     
     print(f"\nTo create a GitHub release:")
-    print(f"1. git tag v{version}")
-    print(f"2. git push origin v{version}")
+    print(f"1. git tag v{firmware_version}")
+    print(f"2. git push origin v{firmware_version}")
     print(f"3. Draft a new release on GitHub https://github.com/stjude-smc/microsync/releases/new\n")
 
 if __name__ == "__main__":
