@@ -49,7 +49,7 @@ const pin_map_t pin_map[] = {
 	{"D28", PIO_PD3_IDX},
 	{"D29", PIO_PD6_IDX},
 	{"D30", PIO_PD9_IDX},
-	//{"D31", PIO_PA7_IDX},  // Used by debug pin
+	{"D31", PIO_PA7_IDX},
 	{"D32", PIO_PD10_IDX},
 	{"D33", PIO_PC1_IDX},
 	{"D34", PIO_PC2_IDX},
@@ -69,9 +69,9 @@ const pin_map_t pin_map[] = {
 	{"D48", PIO_PC15_IDX},
 	{"D49", PIO_PC14_IDX},
 	{"D50", PIO_PC13_IDX},
-	{"D51", PIO_PC12_IDX},
+	// {"D51", PIO_PC12_IDX}, // Used by error indicator LED
 	{"D52", PIO_PB21_IDX},  // 3mA max
-	// {"D53", PIO_PB14_IDX},  // Used by error indicator LED
+	// {"D53", PIO_PB14_IDX},  // Used by debug pin
 	{"D54", PIO_PA16_IDX},  // 3mA max
 	{"D55", PIO_PA24_IDX},  // 3mA max
 	{"D56", PIO_PA23_IDX},  // 3mA max
