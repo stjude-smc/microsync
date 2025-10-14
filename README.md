@@ -21,7 +21,7 @@ from microsync import SyncDevice
 sd = SyncDevice("COM4")  # or "/dev/ttyUSB0" on Linux
 
 # Schedule a laser pulse
-sd.pos_pulse("A0", 1000, ts=1000)  # 1ms pulse on A0 after 1ms delay
+sd.pos_pulse("D8", 1000, ts=1000)  # 1ms pulse on D8 after 1ms delay
 sd.go()  # Start execution
 ```
 
@@ -58,13 +58,15 @@ The device connects to your computer via UART (115,200 baud). All timing and pin
 
 *Arduino Due board - the hardware platform for microsync*
 
-- **Key Pins:**
-  - **Laser shutters:** A0 (Cy2), A1 (Cy3), A2 (Cy5), A3 (Cy7)
-  - **Camera trigger:** A12
-  - **Error indicator:** D53
-  - **Interlock:** D12 (input), D13 (output)
+- **Key Pins: (configurable in `globals.h`)**
+  - **Laser shutters:** D8 (Cy2), D9 (Cy3), D10 (Cy5), D11 (Cy7)
+  - **Camera trigger:** D7
+  - **Error indicator:** D51
+  - **Debug pin:** D53
+  - **Interlock:** D12 (input), D13 (output). If they are not connected, the laser shutters are disabled.
   - **Burst pulse:** D5
-- **See** `doc/Arduino Due pinout.pdf` and `microsync/src/globals.h` for full pin mapping.
+  - **See** `doc/Arduino Due pinout.pdf` and `microsync/src/globals.h` for full pin mapping.
+  - **Note** - pins D35-D38 are reserved as inputs for future use. These pins, as well as interlock, error, and debug pins are unavailable as signal outputs because of their special functions.
 
 ## Firmware Upload
 Upload `microsync-<x.y.z>.bin` to your Arduino Due using BOSSA or Atmel-ICE with Microchip Studio.
@@ -101,14 +103,6 @@ bossac.exe -e -w -v -b microsync-<x.y.z>.bin -p <COM-PORT>
 6. Select Atmel-ICE tool, `ATSAM3X8E` device, JTAG interface, click "Apply".
 7. Go to "Memory" tab, select `microsync-{version}.bin` file, click "Program".
 
-### Wiring and Setup
-
-**Default Connections:**
-- **Laser shutters:** Arduino pins A0-A3 (configurable in `globals.h`)
-- **Camera trigger:** Pin A12 (configurable)
-- **USB connection:** Provides both power and host communication via the micro-USB port next to the power socket. The device is powered through this USB connection and is recognized by the host computer as a virtual COM port.
-
-- **Interlock circuit:** D12 (input) and D13 (output) for laser safety
 
 ### Communication Protocol & Data Structure
 
@@ -172,8 +166,8 @@ print(sd.version)
 print(sd.pulse_duration_us)
 sd.pulse_duration_us = 1000
 
-# Schedule a positive pulse on pin A0
-sd.pos_pulse("A0", 8000, N=120, interval=50000)
+# Schedule a positive pulse on pin D8 (Cy2 laser shutter)
+sd.pos_pulse("D8", 8000, N=120, interval=50000)
 sd.go()
 ```
 
@@ -188,8 +182,8 @@ Batch multiple commands for precise timing: all commands within the context mana
 
 ```python
 with sd as dev:
-    dev.pos_pulse("A12", 100000, N=10, interval=500000, ts=0)
-    dev.pos_pulse("A0", 100000, N=10, interval=500000, ts=5000)
+    dev.pos_pulse("D7", 100000, N=10, interval=500000, ts=0)   # Camera trigger
+    dev.pos_pulse("D8", 100000, N=10, interval=500000, ts=5000) # Cy2 laser
 ```
 
 ### Event Scheduling

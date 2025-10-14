@@ -41,7 +41,7 @@ Hardware Platform
 * **Microcontroller:** Arduino Due (SAM3X8E ARM Cortex-M3)
 * **Logic Levels:** 3.3V CMOS
 * **Communication:** UART at 115,200 baud
-* **Key Pins:** Laser shutters (A0-A3), Camera trigger (A12), Interlock (D12/D13)
+* **Key Pins:** Laser shutters (D8-D11), Camera trigger (D7), Interlock (D12/D13)
 
 Python API
 ^^^^^^^^^^
@@ -56,7 +56,7 @@ The Python driver provides a high-level interface for controlling the device:
    sd = SyncDevice("COM4")
    
    # Schedule events
-   sd.pos_pulse("A0", 1000, N=10, interval=50000)
+   sd.pos_pulse("D8", 1000, N=10, interval=50000)  # Pulse on D8 (Cy2 laser)
    sd.go()
 
 For detailed API documentation, see :doc:`api/index`.

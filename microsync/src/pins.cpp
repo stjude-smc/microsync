@@ -30,7 +30,7 @@ const pin_map_t pin_map[] = {
 	{"D9", PIO_PC21_IDX},
 	{"D10", PIO_PA28_IDX},
 	{"D11", PIO_PD7_IDX},
-	{"D12", PIO_PD8_IDX},
+//	{"D12", PIO_PD8_IDX},  // used by interlock input
 	{"D13", PIO_PB27_IDX},  // 3mA max
 	{"D14", PIO_PD4_IDX},
 	{"D15", PIO_PD5_IDX},
@@ -53,10 +53,10 @@ const pin_map_t pin_map[] = {
 	{"D32", PIO_PD10_IDX},
 	{"D33", PIO_PC1_IDX},
 	{"D34", PIO_PC2_IDX},
-	{"D35", PIO_PC3_IDX},
-	{"D36", PIO_PC4_IDX},
-	{"D37", PIO_PC5_IDX},
-	{"D38", PIO_PC6_IDX},
+//	{"D35", PIO_PC3_IDX},  // Pins D35-D38 are inputs on microsync PCB
+//	{"D36", PIO_PC4_IDX},  // They are reserved for future use
+//	{"D37", PIO_PC5_IDX},
+//	{"D38", PIO_PC6_IDX}, 
 	{"D39", PIO_PC7_IDX},
 	{"D40", PIO_PC8_IDX},
 	{"D41", PIO_PC9_IDX},
@@ -163,6 +163,12 @@ void init_pins()
 				p->set_level(false);
 		}
 	}
+
+	// D35-D38 are inputs reserved for future use
+	ioport_set_pin_dir(PIO_PC3_IDX, IOPORT_DIR_INPUT);
+	ioport_set_pin_dir(PIO_PC4_IDX, IOPORT_DIR_INPUT);
+	ioport_set_pin_dir(PIO_PC5_IDX, IOPORT_DIR_INPUT);
+	ioport_set_pin_dir(PIO_PC6_IDX, IOPORT_DIR_INPUT);
 
 	/* Arduino Due pin quirks */
 	// D4 is hardwired to both PA29 and PC26;
