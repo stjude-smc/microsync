@@ -222,6 +222,8 @@ The device uses a **priority queue** to manage event scheduling with microsecond
 
 **Example:** When you schedule multiple events, they're automatically ordered and executed in time sequence, regardless of the order they were submitted. If two events have exactly the same timestamp, their execution order is undefined.
 
+![](doc/scheduler_architecture.svg)
+
 ### Laser Shutter and Interlock
 
 - **Open/Close shutters:** `sd.open_shutters(mask)`, `sd.close_shutters(mask)`
