@@ -133,8 +133,8 @@ Required Connections
 ^^^^^^^^^^^^^^^^^^^^
 
 * **USB Connection:** Connect Arduino Due to host computer
-* **Laser Shutters:** Connect to pins A0-A3 (configurable)
-* **Camera Trigger:** Connect to pin A12
+* **Laser Shutters:** D8 (Cy2), D9 (Cy3), D10 (Cy5), D11 (Cy7) - configurable in ``globals.h``
+* **Camera Trigger:** D7 - configurable in ``globals.h``
 * **Interlock Circuit:** Connect between D12 (input) and D13 (output)
 
 Power Supply
@@ -170,7 +170,7 @@ Test the Complete Setup
    .. code-block:: python
 
       # Test event scheduling
-      sd.pos_pulse("A0", 1000, N=5, interval=10000)
+      sd.pos_pulse("D8", 1000, N=5, interval=10000)  # Pulse on D8 (Cy2 laser)
       sd.go()
       
       # Check status

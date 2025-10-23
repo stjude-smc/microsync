@@ -80,8 +80,8 @@ Hardware Interface
 Pin management and hardware abstraction layer:
 
 - **Pin Mapping**: Arduino Due pin assignments
-- **Laser Shutters**: A0-A3 for laser control
-- **Camera Trigger**: A12 for camera synchronization
+- **Laser Shutters**: D8 (Cy2), D9 (Cy3), D10 (Cy5), D11 (Cy7) - see ``globals.h``
+- **Camera Trigger**: D7 - see ``globals.h``
 - **Status LEDs**: Visual feedback and debugging
 
 .. code-block:: cpp

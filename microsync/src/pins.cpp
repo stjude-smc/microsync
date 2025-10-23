@@ -16,10 +16,11 @@ Pin pins[107];
 /************************************************************************/
 
 // Arduino Due pin mapping table (digital and analog pins)
+// See: https://docs.arduino.cc/retired/hacking/hardware/PinMappingSAM3X/
+// Note that some pins can output only 3mA of current instead of 15mA (datasheet page 1379)
 const pin_map_t pin_map[] = {
-	{"D0", PIO_PA8_IDX},     // Digital pin D0 -> PA8
-	{"D1", PIO_PA9_IDX},
-	{"D2", PIO_PB25_IDX},
+	// D0 and D1 are used by UART for communication
+	{"D2", PIO_PB25_IDX},  // 3mA max
 	{"D3", PIO_PC28_IDX},
 	{"D4", PIO_PA29_IDX},
 	{"D5", PIO_PC25_IDX},
@@ -29,17 +30,17 @@ const pin_map_t pin_map[] = {
 	{"D9", PIO_PC21_IDX},
 	{"D10", PIO_PA28_IDX},
 	{"D11", PIO_PD7_IDX},
-	{"D12", PIO_PD8_IDX},
-	{"D13", PIO_PB27_IDX},
+//	{"D12", PIO_PD8_IDX},  // used by interlock input
+	{"D13", PIO_PB27_IDX},  // 3mA max
 	{"D14", PIO_PD4_IDX},
 	{"D15", PIO_PD5_IDX},
-	{"D16", PIO_PA13_IDX},
-	{"D17", PIO_PA12_IDX},
-	{"D18", PIO_PA11_IDX},
-	{"D19", PIO_PA10_IDX},
-	{"D20", PIO_PB12_IDX},
-	{"D21", PIO_PB13_IDX},
-	{"D22", PIO_PB26_IDX},
+	{"D16", PIO_PA13_IDX},  // 3mA max
+	{"D17", PIO_PA12_IDX},  // 3mA max
+	{"D18", PIO_PA11_IDX},  // 3mA max
+	{"D19", PIO_PA10_IDX},  // 3mA max
+	{"D20", PIO_PB12_IDX},  // 3mA max
+	{"D21", PIO_PB13_IDX},  // 3mA max
+	{"D22", PIO_PB26_IDX},  // 3mA max
 	{"D23", PIO_PA14_IDX},
 	{"D24", PIO_PA15_IDX},
 	{"D25", PIO_PD0_IDX},
@@ -52,15 +53,15 @@ const pin_map_t pin_map[] = {
 	{"D32", PIO_PD10_IDX},
 	{"D33", PIO_PC1_IDX},
 	{"D34", PIO_PC2_IDX},
-	{"D35", PIO_PC3_IDX},
-	{"D36", PIO_PC4_IDX},
-	{"D37", PIO_PC5_IDX},
-	{"D38", PIO_PC6_IDX},
+//	{"D35", PIO_PC3_IDX},  // Pins D35-D38 are inputs on microsync PCB
+//	{"D36", PIO_PC4_IDX},  // They are reserved for future use
+//	{"D37", PIO_PC5_IDX},
+//	{"D38", PIO_PC6_IDX}, 
 	{"D39", PIO_PC7_IDX},
 	{"D40", PIO_PC8_IDX},
 	{"D41", PIO_PC9_IDX},
 	{"D42", PIO_PA19_IDX},
-	{"D43", PIO_PA20_IDX},
+	{"D43", PIO_PA20_IDX},  // 3mA max
 	{"D44", PIO_PC19_IDX},
 	{"D45", PIO_PC18_IDX},
 	{"D46", PIO_PC17_IDX},
@@ -68,41 +69,41 @@ const pin_map_t pin_map[] = {
 	{"D48", PIO_PC15_IDX},
 	{"D49", PIO_PC14_IDX},
 	{"D50", PIO_PC13_IDX},
-	{"D51", PIO_PC12_IDX},
-	{"D52", PIO_PB21_IDX},
-	{"D53", PIO_PB14_IDX},
-	{"D54", PIO_PA16_IDX},
-	{"D55", PIO_PA24_IDX},
-	{"D56", PIO_PA23_IDX},
-	{"D57", PIO_PA22_IDX},
-	{"D58", PIO_PA6_IDX},
-	{"D59", PIO_PA4_IDX},
-	{"D60", PIO_PA3_IDX},
-	{"D61", PIO_PA2_IDX},
-	{"D62", PIO_PB17_IDX},
-	{"D63", PIO_PB18_IDX},
-	{"D64", PIO_PB19_IDX},
-	{"D65", PIO_PB20_IDX},
-	{"D66", PIO_PB15_IDX},
-	{"D67", PIO_PB16_IDX},
-	{"D68", PIO_PA1_IDX},
+	// {"D51", PIO_PC12_IDX}, // Used by error indicator LED
+	{"D52", PIO_PB21_IDX},  // 3mA max
+	// {"D53", PIO_PB14_IDX},  // Used by debug pin
+	{"D54", PIO_PA16_IDX},  // 3mA max
+	{"D55", PIO_PA24_IDX},  // 3mA max
+	{"D56", PIO_PA23_IDX},  // 3mA max
+	{"D57", PIO_PA22_IDX},  // 3mA max
+	{"D58", PIO_PA6_IDX},   // 3mA max
+	{"D59", PIO_PA4_IDX},   // 3mA max
+	{"D60", PIO_PA3_IDX},   // 3mA max
+	{"D61", PIO_PA2_IDX},   // 3mA max
+	{"D62", PIO_PB17_IDX},  // 3mA max
+	{"D63", PIO_PB18_IDX},  // 3mA max
+	{"D64", PIO_PB19_IDX},  // 3mA max
+	{"D65", PIO_PB20_IDX},  // 3mA max
+	{"D66", PIO_PB15_IDX},  // 3mA max
+	{"D67", PIO_PB16_IDX},  // 3mA max
+	{"D68", PIO_PA1_IDX},   // 3mA max
 	{"D69", PIO_PA0_IDX},
 
-	{"A0", PIO_PA16_IDX},
-	{"A1", PIO_PA24_IDX},
-	{"A2", PIO_PA23_IDX},
-	{"A3", PIO_PA22_IDX},
-	{"A4", PIO_PA6_IDX},
-	{"A5", PIO_PA4_IDX},
-	{"A6", PIO_PA3_IDX},
-	{"A7", PIO_PA2_IDX},
-	{"A8", PIO_PB17_IDX},
-	{"A9", PIO_PB18_IDX},
-	{"A10", PIO_PB19_IDX},
-	{"A11", PIO_PB20_IDX},
-	{"A12", PIO_PB15_IDX},
-	{"A13", PIO_PB16_IDX},
-	{"A14", PIO_PA1_IDX},
+	{"A0", PIO_PA16_IDX},   // 3mA max
+	{"A1", PIO_PA24_IDX},   // 3mA max
+	{"A2", PIO_PA23_IDX},   // 3mA max
+	{"A3", PIO_PA22_IDX},   // 3mA max
+	{"A4", PIO_PA6_IDX},    // 3mA max
+	{"A5", PIO_PA4_IDX},    // 3mA max
+	{"A6", PIO_PA3_IDX},    // 3mA max
+	{"A7", PIO_PA2_IDX},    // 3mA max
+	{"A8", PIO_PB17_IDX},   // 3mA max
+	{"A9", PIO_PB18_IDX},   // 3mA max
+	{"A10", PIO_PB19_IDX},  // 3mA max
+	{"A11", PIO_PB20_IDX},  // 3mA max
+	{"A12", PIO_PB15_IDX},  // 3mA max
+	{"A13", PIO_PB16_IDX},  // 3mA max
+	{"A14", PIO_PA1_IDX},   // 3mA max
 	{"A15", PIO_PA0_IDX},
 };
 
@@ -127,9 +128,10 @@ uint32_t pin_name_to_ioport_id(const uint32_t pin_name_uint32) {
 		}
 	}
 
-	// Return 0 if pin name is not found
+	// Return INVALID_PIN_IDX if pin name is not found
 	printf("ERR: Could not find pin %s\n", pin_name);
-	return 0;
+	err_led_on();
+	return INVALID_PIN_IDX;
 }
 
 // Initialize predefined pins for camera and laser shutters
@@ -161,6 +163,23 @@ void init_pins()
 				p->set_level(false);
 		}
 	}
+
+	// D35-D38 are inputs reserved for future use
+	ioport_set_pin_dir(PIO_PC3_IDX, IOPORT_DIR_INPUT);
+	ioport_set_pin_dir(PIO_PC4_IDX, IOPORT_DIR_INPUT);
+	ioport_set_pin_dir(PIO_PC5_IDX, IOPORT_DIR_INPUT);
+	ioport_set_pin_dir(PIO_PC6_IDX, IOPORT_DIR_INPUT);
+
+	/* Arduino Due pin quirks */
+	// D4 is hardwired to both PA29 and PC26;
+	// We set PC26 as input and disable pull-up resistor
+	ioport_set_pin_mode(PIO_PC26_IDX, 0);
+	ioport_set_pin_dir(PIO_PC26_IDX, IOPORT_DIR_INPUT);
+
+	// D10 is hardwired to both PA28 and PC29;
+	// We set PC29 as input and disable pull-up resistor
+	ioport_set_pin_mode(PIO_PC29_IDX, 0);
+	ioport_set_pin_dir(PIO_PC29_IDX, IOPORT_DIR_INPUT);
 }
 
 

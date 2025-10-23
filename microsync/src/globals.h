@@ -10,24 +10,24 @@
 #include "pins.h"
 #endif
 
-#define VERSION "2.5.2"
+#define VERSION "2.6.0"
 
 
 /************************************************************************/
 /*                    PINOUT AND WIRING DEFINITIONS                     */
 /************************************************************************/
 // Laser shutters
-#define CY2_PIN		PIO_PA16_IDX	// A0
-#define CY3_PIN		PIO_PA24_IDX	// A1
-#define CY5_PIN		PIO_PA23_IDX	// A2
-#define CY7_PIN		PIO_PA22_IDX	// A3 
+#define CY2_PIN		PIO_PC22_IDX	// D8
+#define CY3_PIN		PIO_PC21_IDX	// D9
+#define CY5_PIN		PIO_PA28_IDX	// D10
+#define CY7_PIN		PIO_PD7_IDX  	// D11
 
 const uint32_t shutter_pins[] = { CY2_PIN, CY3_PIN, CY5_PIN, CY7_PIN };
 	
-#define CAMERA_PIN  PIO_PB15_IDX    // A12 aka DAC2/D66
+#define CAMERA_PIN  PIO_PC23_IDX    // D7
 
 // Error indicator trigger
-#define ERR_PIN		PIO_PB14_IDX	// D53
+#define ERR_PIN		PIO_PC12_IDX	// D51
 
 /**
  * @brief Turn on the error indicator LED.
@@ -50,7 +50,7 @@ inline void err_led_off(){
 }
 
 // Debug pin
-#define DBG_PIN  PIO_PA7_IDX        // D31
+#define DBG_PIN  PIO_PB14_IDX        // D53
 
 /**
  * @brief Set the debug pin high.
@@ -78,14 +78,10 @@ inline void dbg_pin_dn(){
 
 // Interlock configuration (see datasheet table 36-4)
 #define INTLCK_IN		      PIO_PD8_IDX   // D12
-#define INTLCK_TIOB
-#ifdef INTLCK_TIOA
-	#define INTLCK_OUT        PIO_PB25_IDX  //  D2, TIOA0  (TC0, channel 0)
-	#define INTLCK_OUT_PERIPH IOPORT_MODE_MUX_B
-#else
-	#define INTLCK_OUT        PIO_PB27_IDX  // D13, TIOB0  (TC0, channel 0)
-	#define INTLCK_OUT_PERIPH IOPORT_MODE_MUX_B
-#endif
+
+#define INTLCK_OUT       	  PIO_PB27_IDX      // D13, TIOB0  (TC0, channel 0)
+#define INTLCK_OUT_PERIPH     IOPORT_MODE_MUX_B
+
 #define ID_INTLCK_TC          ID_TC0
 #define INTLCK_TC             TC0	// ID / 3
 #define INTLCK_TC_CH          0		// ID % 3

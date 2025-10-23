@@ -19,9 +19,17 @@
 #include "globals.h"
 
 /**
+ * @brief Error code returned when pin name is not found.
+ * 
+ * This value is used to indicate an invalid pin index and should be checked
+ * by callers before using the returned value.
+ */
+#define INVALID_PIN_IDX UINT32_MAX
+
+/**
  * @brief Convert pin name string to IOPORT ID.
  * @param pin_name Pointer to pin name string (e.g., "D13", "A0")
- * @return IOPORT ID for the specified pin, or 0 if not found
+ * @return IOPORT ID for the specified pin, or INVALID_PIN_IDX if not found
  * 
  * Maps Arduino Due pin names to their corresponding IOPORT identifiers.
  */
@@ -30,7 +38,7 @@ uint32_t pin_name_to_ioport_id(const char* pin_name);
 /**
  * @brief Convert pin name integer to IOPORT ID.
  * @param pin_name Pin name as integer (e.g., 13 for D13)
- * @return IOPORT ID for the specified pin, or 0 if not found
+ * @return IOPORT ID for the specified pin, or INVALID_PIN_IDX if not found
  * 
  * Maps Arduino Due pin numbers to their corresponding IOPORT identifiers.
  */

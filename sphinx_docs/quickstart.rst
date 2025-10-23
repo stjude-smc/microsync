@@ -214,10 +214,10 @@ Common Patterns
 
    # Control multiple pins simultaneously
    with sd as dev:
-       dev.pos_pulse("A0", 1000, ts=0)      # Laser 1
-       dev.pos_pulse("A1", 1000, ts=1000)   # Laser 2
-       dev.pos_pulse("A2", 1000, ts=2000)   # Laser 3
-       dev.pos_pulse("A12", 100, ts=500)    # Camera trigger
+       dev.pos_pulse("D8", 1000, ts=0)      # Cy2 laser
+       dev.pos_pulse("D9", 1000, ts=1000)   # Cy3 laser
+       dev.pos_pulse("D10", 1000, ts=2000)  # Cy5 laser
+       dev.pos_pulse("D7", 100, ts=500)     # Camera trigger
 
 **Error Handling:**
 
