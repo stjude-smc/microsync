@@ -35,8 +35,7 @@ bool interlock_enabled = true;
 /**
  * @brief Initialize the interlock timer/counter
  * 
- * Sets up a timer/counter for laser interlock monitoring with waveform generation.
- * Configures TIOA or TIOB output pins and enables interrupts for interlock detection.
+ * Sets up a timer/counter for laser interlock monitoring with heartbeat generation.
  */
 void _init_interlock_timer()
 {
@@ -45,11 +44,6 @@ void _init_interlock_timer()
         SYS_TC_CMR_TCCLKS_TIMER_CLOCK |  // same prescaler as the system timer
         TC_CMR_WAVE |                 // waveform generation mode
         TC_CMR_EEVT_XC0 |             // External event selection - enables TIOB
-        // TIOB configuration
-        TC_CMR_BSWTRG_SET |           // set B on timer start
-        TC_CMR_BCPB_CLEAR |           // clear B on compare event B
-        TC_CMR_BCPC_SET |             // set B on compare event C
-   
         TC_CMR_WAVSEL_UP_RC       // restart timer on event C
     );
 
@@ -70,8 +64,8 @@ void init_interlock()
 
     sysclk_enable_peripheral_clock(ioport_pin_to_port_id(INTLCK_OUT));
 
-    ioport_set_pin_mode(INTLCK_OUT, INTLCK_OUT_PERIPH);
-    ioport_disable_pin(INTLCK_OUT);
+    ioport_set_pin_mode(INTLCK_OUT, 0);
+	ioport_set_pin_dir(INTLCK_OUT, IOPORT_DIR_OUTPUT);
 
     tc_start(INTLCK_TC, INTLCK_TC_CH);
 }
@@ -105,15 +99,23 @@ void INTLCK_TC_Handler()
 {
     // Read Timer Counter Status to clear the interrupt flag
     uint32_t status = tc_get_status(INTLCK_TC, INTLCK_TC_CH);
-    
-    // RA or RB match - output went from high to low
-    if ((status & TC_SR_CPAS) || (status & TC_SR_CPBS)) {
-        intlck_match_1 = ioport_get_pin_level(INTLCK_IN) == 0;
+	
+    // RB match - output goes from high to low
+    if (status & TC_SR_CPBS) {
+		// Verify that previous input is HIGH
+        intlck_match_1 = ioport_get_pin_level(INTLCK_IN) == 1;
+		
+		// Drop the output to LOW and let it settle
+		ioport_set_pin_level(INTLCK_OUT, 0);
     }
 
     // RC match - output went from low to high
     if (status & TC_SR_CPCS) {
-        intlck_match_2 = ioport_get_pin_level(INTLCK_IN) == 1;
+		// Verify that previous input is LOW
+		intlck_match_2 = ioport_get_pin_level(INTLCK_IN) == 0;
+		
+		// Set the output to HIGH and let it settle
+		ioport_set_pin_level(INTLCK_OUT, 1);
     }
     
 	if (interlock_enabled)
