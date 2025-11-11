@@ -45,27 +45,17 @@ void _init_interlock_timer()
         SYS_TC_CMR_TCCLKS_TIMER_CLOCK |  // same prescaler as the system timer
         TC_CMR_WAVE |                 // waveform generation mode
         TC_CMR_EEVT_XC0 |             // External event selection - enables TIOB
-#ifdef INTLCK_TIOA
-        // TIOA configuration
-        TC_CMR_ASWTRG_SET |           // set A on timer start
-        TC_CMR_ACPA_CLEAR |           // clear A on compare event B
-        TC_CMR_ACPC_SET |             // set A on compare event C
-#else        
         // TIOB configuration
         TC_CMR_BSWTRG_SET |           // set B on timer start
         TC_CMR_BCPB_CLEAR |           // clear B on compare event B
         TC_CMR_BCPC_SET |             // set B on compare event C
-#endif        
+   
         TC_CMR_WAVSEL_UP_RC       // restart timer on event C
     );
 
-#ifdef INTLCK_TIOA
-    tc_write_ra(INTLCK_TC, INTLCK_TC_CH, us2cts(INTLCK_TC_PERIOD_US >> 4));
-    tc_enable_interrupt(INTLCK_TC, INTLCK_TC_CH, TC_IER_CPAS);
-#else
     tc_write_rb(INTLCK_TC, INTLCK_TC_CH, us2cts(INTLCK_TC_PERIOD_US >> 4));
     tc_enable_interrupt(INTLCK_TC, INTLCK_TC_CH, TC_IER_CPBS);
-#endif
+
     tc_write_rc(INTLCK_TC, INTLCK_TC_CH, us2cts(INTLCK_TC_PERIOD_US));
     tc_enable_interrupt(INTLCK_TC, INTLCK_TC_CH, TC_IER_CPCS);
     
