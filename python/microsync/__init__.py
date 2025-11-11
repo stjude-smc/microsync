@@ -6,6 +6,7 @@ microscope components including lasers, cameras, and other timing-critical devic
 """
 
 from .microsync import SyncDevice, Event, props
+from .tektronix import TDS2004
 from .event_visualizer import EventVisualizer, plot_event_file
 from .constants import *
 from .rev_pin_map import rev_pin_map
