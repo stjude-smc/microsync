@@ -13,7 +13,7 @@ extern "C" {
 #include "events.h"
 #include "interlock.h"
 #include "props.h"
-
+#include "ext_pTIRF.h"
 
 /**
  * @brief Activates the watchdog timer with a configurable timeout
@@ -148,6 +148,45 @@ int main() {
 	init_interlock();
 	
 	printf("Sync device is ready. Firmware version: %s\n", VERSION);
+	
+	start_sys_timer();
+	
+	// Roman's hack
+	interlock_enabled = true;
+	set_property(rw_SELECTED_LASERS, 15);  // all four
+	
+	DataPacket data;
+	data.arg1 = 150000;       // exposure time
+	data.ts_us = 500000;      // 0.5 s later
+	data.N = 0;               // forever
+	data.interv_us = 1000000; // every 1.0 s
+	start_ALEX_acq(&data);
+	
+	schedule_pulse(pin_name_to_ioport_id("D31"), 50000, 0, 0, 600000, true);
+	schedule_pulse(pin_name_to_ioport_id("D6"),  300000, 0, 0, 4000000, true);
+	schedule_pulse(pin_name_to_ioport_id("D6"),  30000, 420000, 0, 4000000, true);
+
+	schedule_pulse(pin_name_to_ioport_id("D6"),  50000, 11100000, 0, 11000000, true);
+	schedule_pulse(pin_name_to_ioport_id("D6"),  50000, 11300000, 0, 11000000, true);
+	schedule_pulse(pin_name_to_ioport_id("D6"),  50000, 11700000, 0, 11000000, true);
+
+
+	schedule_pulse(pin_name_to_ioport_id("D33"), 50000, 0, 0, 1500000, true);
+	schedule_pulse(pin_name_to_ioport_id("D34"), 250000, 0, 0, 1200000, true);
+
+
+	data.arg1 = 13636; //D5
+	data.interv_us = 400;
+	schedule_toggle(&data);
+	data.interv_us = 401;
+	schedule_toggle(&data);
+	
+	data.arg1 = 3289924; //D32
+	data.interv_us = 700; 
+	schedule_toggle(&data);
+	data.interv_us = 701;
+	schedule_toggle(&data);
+
 	
 	start_sys_timer();
 
