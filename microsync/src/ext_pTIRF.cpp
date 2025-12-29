@@ -168,9 +168,11 @@ void start_continuous_acq(const DataPacket* data) {
 }
 
 
-// Helper function to calculate frame duration (exposure + readout + shutter delay)
+// Helper function to calculate frame duration for stroboscopic imaging
 uint32_t find_strobe_frame_duration(const AcqParams& p) {
-    return p.exp + p.readout + p.shutter;
+	if (get_property(rw_CAM_LEVEL_TRIGGER_MODE) == LVL_TRG_NORMAL)
+		return p.exp + 2*p.readout + 25;  // exposure, double readout, and a small safety buffer
+	return p.exp + p.readout + p.shutter;
 }
 
 // Helper function to calculate burst period based on frame duration and requested interval
@@ -185,18 +187,15 @@ void schedule_camera_strobe(const AcqParams& p, uint32_t frame_start, uint32_t N
 	uint32_t cam_start;
 
 	switch (get_property(rw_CAM_LEVEL_TRIGGER_MODE)) {
-		case LVL_TRG_NORMAL: // LVL_TRG_NORMAL is the fall back mode
 		default: 
-			cam_pulse_duration = p.exp + 2*p.readout;
-			cam_start = frame_start - p.readout;
-			break;
+		case LVL_TRG_NORMAL:
 		case LVL_TRG_OVERLAP:
 			cam_pulse_duration = p.exp + p.readout;
 			cam_start = frame_start - p.readout;
 			break;
 		case LVL_TRG_GLOBAL_RESET:
-			cam_pulse_duration = p.exp + p.readout;
-			cam_start = frame_start - p.readout;
+			cam_pulse_duration = p.exp;
+			cam_start = frame_start;
 			break;
 	}
 
