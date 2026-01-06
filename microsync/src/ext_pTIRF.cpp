@@ -87,7 +87,7 @@ uint32_t selected_lasers()
 	return mask;
 }
 
-void schedule_shutter_pulse(uint32_t pulse_duration_us,
+void schedule_shutter_pulse(uint64_t pulse_duration_us,
                             uint64_t timestamp_us, uint32_t N, uint32_t interval_us,
 							bool relative)
 {
@@ -150,10 +150,12 @@ void start_continuous_acq(const DataPacket* data) {
 	// Schedule shutter opening at p.start - p.shutter
 	// For N==0: shutters stay open indefinitely
 	// For N>0: shutters close after N frames + readout + shutter delay
+	auto pulse_duration = (N == 0) ? uint64_t{0} : uint64_t{p.exp} * N + p.readout + p.shutter;
+	
 	schedule_shutter_pulse(
-		(N == 0) ? 0 : (p.exp * N + p.readout + p.shutter), // duration: 0=infinite, otherwise N frames + readout + shutter
-		p.start - p.shutter,                                // open shutters just before the first frame
-		1, 0, false);                                       // just once
+		pulse_duration,         // duration: 0=infinite, otherwise N frames + readout + shutter
+		p.start - p.shutter,    // open shutters just before the first frame
+		1, 0, false);           // just once
 
 	// Sacrificial frame clears the sensor..
 	schedule_pulse(CAMERA_PIN, cam_pulse_duration, 

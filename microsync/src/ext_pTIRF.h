@@ -61,7 +61,7 @@ uint32_t selected_lasers();
  * Schedules a series of shutter pulses with the specified parameters.
  * If pulse_duration_us is 0, only opening events are scheduled (shutters stay open).
  */
-void schedule_shutter_pulse(uint32_t pulse_duration_us, uint64_t timestamp_us, uint32_t N, uint32_t interval_us, bool relative);
+void schedule_shutter_pulse(uint64_t pulse_duration_us, uint64_t timestamp_us, uint32_t N, uint32_t interval_us, bool relative);
 
 /**
  * @brief Event function wrapper for opening shutters.
