@@ -151,8 +151,8 @@ static inline void _update_ra()
 	_disable_event_irq();
 		next_event = event_queue.top();
 		// Update the RA register for compare interrupt
-		tc_write_ra(SYS_TC, SYS_TC_CH, next_event.ts64_cts);
-		tc_write_rc(SYS_TC, SYS_TC_CH, next_event.ts64_cts + 1);
+		tc_write_ra(SYS_TC, SYS_TC_CH, next_event.ts_lo32_cts);
+		tc_write_rc(SYS_TC, SYS_TC_CH, next_event.ts_lo32_cts + 1);
 	_enable_event_irq();
 }
 
