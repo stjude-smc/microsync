@@ -1,0 +1,49 @@
+# Publish the Python package to PyPI when a tag starting with 'v' is pushed (e.g. v2.6.3).
+# Ensure the tag is created from the commit you want to release (on master).
+
+name: Publish Python package to PyPI
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write  # Required only for Trusted Publishing (OIDC); harmless if using token
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set version from tag
+        id: version
+        run: |
+          VERSION="${GITHUB_REF#refs/tags/v}"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Publishing microsync $VERSION"
+
+      - name: Update __version__.py from tag
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          # Preserve the rest of the file, only replace __version__
+          sed -i "s/^__version__ = .*$/__version__ = \"$VERSION\"  # Set by CI from tag/" python/microsync/__version__.py
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install build dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install build twine
+
+      - name: Build package
+        working-directory: python
+        run: python -m build
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
