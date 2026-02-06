@@ -130,14 +130,15 @@ Sync device is ready. Firmware version: 2.4.0
 
 ### Installation
 
-Requires Python 3.7+ and `pyserial`.  
-Install with:
+Requires Python 3.7+ and `pyserial`.  The `microsync` package is automatically published on Python Package Index (PyPI), so it can be installed with `pip`:
+
 
 ```bash
-pip install pyserial
+pip install microsync
 ```
 
-Copy the `python/` directory or install as a package if desired.
+*Note*: Releases are published to PyPI automatically when a new version is released (a new tag starting with `v` is pushed). The workflow [`.github/workflows/publish-pypi.yml`](.github/workflows/publish-pypi.yml) builds the package from `python/`, sets the version from the tag, and publishes it to PyPI.
+
 
 ### Python Module Structure
 

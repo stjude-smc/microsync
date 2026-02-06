@@ -14,12 +14,19 @@ from .__version__ import __version__
 
 __all__ = [
     'SyncDevice',
-    'EventVisualizer', 
+    'EventVisualizer',
     'rev_pin_map',
     'props',
     '__version__',
+    'main',
     # Constants
     'ms',
-    'MHz', 
-    'UNIFORM_TIME_DELAY'
+    'MHz',
+    'UNIFORM_TIME_DELAY',
 ]
+
+
+def main():
+    """CLI entry point (e.g. `microsync` command after pip install)."""
+    print(f"microsync {__version__}")
+    print("Use as a library: from microsync import SyncDevice")
