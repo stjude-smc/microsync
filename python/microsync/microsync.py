@@ -1205,7 +1205,7 @@ class SyncDevice(object):
         events = self.get_events()
         if events:
             for event in events:
-                if rev_pin_map[event.arg1] == "A12":
+                if rev_pin_map[event.arg1] == "D7":
                     return event.N
         return 0
 

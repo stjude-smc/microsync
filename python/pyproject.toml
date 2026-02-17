@@ -6,7 +6,8 @@ build-backend = "setuptools.build_meta"
 name = "microsync"
 dynamic = ["version", "dependencies"]
 description = "Python driver for 32-bit microscope synchronization device."
-license = {text = "Apache 2.0"}
+readme = "README.md"
+license = "Apache-2.0"
 authors = [
     {name = "Roman Kiselev", email = "roman.kiselev@stjude.org"}
 ]
@@ -26,8 +27,6 @@ classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Science/Research",
     "Topic :: Scientific/Engineering :: Physics",
-    "Topic :: Scientific/Engineering :: Bio-Physics",
-    "License :: OSI Approved :: Apache Software License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.7",
     "Programming Language :: Python :: 3.8",
