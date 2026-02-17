@@ -14,6 +14,7 @@ extern "C" {
 #include "interlock.h"
 #include "props.h"
 #include "ext_pTIRF.h"
+#include "buttons.h"
 
 /**
  * @brief Activates the watchdog timer with a configurable timeout
@@ -146,13 +147,14 @@ int main() {
 	init_props();
 	
 	init_interlock();
-	
+	init_buttons();
+
 	printf("Sync device is ready. Firmware version: %s\n", VERSION);
 	
 	start_sys_timer();
 	
 	// Roman's hack
-	interlock_enabled = true;
+	interlock_enabled = false;
 	set_property(rw_SELECTED_LASERS, 15);  // all four
 	
 	DataPacket data;
