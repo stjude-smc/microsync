@@ -199,6 +199,7 @@ int main() {
 			process_events();  // <- internally sets RA to timestamp of the next event
 		}
 
+		process_button_events();
 		poll_uart();
 
 		// Indicates execution of the main loop (for monitoring with an oscilloscope)
