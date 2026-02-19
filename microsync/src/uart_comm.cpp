@@ -261,21 +261,12 @@ void _parse_UART_command(const DataPacket *data)
 	}
 	else if (strncasecmp(data->cmd, "STP", 3) == 0)
 	{
-		// delete event queue, set all pins low, and stop system timer
-		stop_burst_func(0, 0);
 		stop_sys_timer();
-		std::priority_queue<Event>().swap(event_queue);
-	
-		err_led_off();
-		init_pins();
+		clear_event_queue_and_reset_pins();
 	}
-	else if (strncasecmp(data->cmd, "CLR", 3) == 0)  // delete event queue, set all pins low
+	else if (strncasecmp(data->cmd, "CLR", 3) == 0)
 	{
-		stop_burst_func(0, 0);
-		std::priority_queue<Event>().swap(event_queue);
-		
-		err_led_off();
-		init_pins();
+		clear_event_queue_and_reset_pins();
 	}
 	else if (strncasecmp(data->cmd, "RST", 3) == 0)
 	{

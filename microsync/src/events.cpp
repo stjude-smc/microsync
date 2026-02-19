@@ -398,6 +398,13 @@ void stop_sys_timer()
 	tc_stop(SYS_TC, SYS_TC_CH);
 }
 
+void clear_event_queue_and_reset_pins(void)
+{
+	stop_burst_func(0, 0);
+	std::priority_queue<Event>().swap(event_queue);
+	err_led_off();
+	init_pins();
+}
 
 void init_sys_timer()
 {

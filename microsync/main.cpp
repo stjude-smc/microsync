@@ -154,7 +154,7 @@ int main() {
 	start_sys_timer();
 	
 	// Roman's hack
-	interlock_enabled = false;
+	interlock_enabled = true;
 	set_property(rw_SELECTED_LASERS, 15);  // all four
 	
 	DataPacket data;
