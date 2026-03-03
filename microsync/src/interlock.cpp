@@ -18,18 +18,7 @@ volatile bool intlck_match_2 = false;
 /** @brief Global laser enable/disable state */
 volatile bool lasers_enabled = true;
 
-/** @brief Cy2 laser active state */
-volatile bool cy2_active = true;
-
-/** @brief Cy3 laser active state */
-volatile bool cy3_active = true;
-
-/** @brief Cy5 laser active state */
-volatile bool cy5_active = true;
-
-/** @brief Cy7 laser active state */
-volatile bool cy7_active = true;
-
+/** @brief Interlock system enabled state */
 bool interlock_enabled = true;
 
 /**
