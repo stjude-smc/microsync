@@ -22,8 +22,14 @@
 #define CY5_PIN		PIO_PA28_IDX	// D10
 #define CY7_PIN		PIO_PD7_IDX  	// D11
 
+#define CY2_SECONDARY_PIN PIO_PC2_IDX	// D34
+#define CY3_SECONDARY_PIN PIO_PC1_IDX	// D33
+#define CY5_SECONDARY_PIN PIO_PD10_IDX	// D32
+#define CY7_SECONDARY_PIN PIO_PA7_IDX	// D31
+
 const uint32_t shutter_pins[] = { CY2_PIN, CY3_PIN, CY5_PIN, CY7_PIN };
-	
+const uint32_t shutter_secondary_pins[] = { CY2_SECONDARY_PIN, CY3_SECONDARY_PIN, CY5_SECONDARY_PIN, CY7_SECONDARY_PIN };
+
 #define CAMERA_PIN  PIO_PC23_IDX    // D7
 
 // Error indicator trigger

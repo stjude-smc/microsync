@@ -65,10 +65,11 @@ void enable_lasers()
 	lasers_enabled = true;
 
     // Update pin state to reflect the interlock state
-    pins[CY2_PIN].update();
-    pins[CY3_PIN].update();
-    pins[CY5_PIN].update();
-    pins[CY7_PIN].update();
+    for (uint32_t i = 0; i < 4; ++i)
+    {
+        pins[shutter_pins[i]].update();
+        pins[shutter_secondary_pins[i]].update();
+    }
 }
 
 
@@ -77,10 +78,11 @@ void disable_lasers()
 	lasers_enabled = false;
 
     // Update pin state to reflect the interlock state
-    pins[CY2_PIN].update();
-    pins[CY3_PIN].update();
-    pins[CY5_PIN].update();
-    pins[CY7_PIN].update();
+    for (uint32_t i = 0; i < 4; ++i)
+    {
+        pins[shutter_pins[i]].update();
+        pins[shutter_secondary_pins[i]].update();
+    }
 }
 
 

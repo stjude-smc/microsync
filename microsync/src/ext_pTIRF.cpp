@@ -40,6 +40,7 @@ void open_shutters(uint32_t mask)
 		if (mask & (1 << i))
 		{
 			pins[shutter_pins[i]].set_level(true);
+			pins[shutter_secondary_pins[i]].set_level(true);
 		}
 	}
 }
@@ -55,6 +56,7 @@ void close_shutters(uint32_t mask)
 		if (mask & (1 << i))
 		{
 			pins[shutter_pins[i]].set_level(false);
+			pins[shutter_secondary_pins[i]].set_level(false);
 		}
 	}
 }
@@ -66,10 +68,12 @@ void select_lasers(uint32_t mask)
 		if (mask & (1 << i))
 		{
 			pins[shutter_pins[i]].enable();
+			pins[shutter_secondary_pins[i]].enable();
 		}
 		else
 		{
 			pins[shutter_pins[i]].disable();
+			pins[shutter_secondary_pins[i]].disable();
 		}
 	}
 }
