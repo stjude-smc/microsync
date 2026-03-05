@@ -29,35 +29,47 @@ int _count_set_bits(unsigned int bitmask) {
 /*                SHORTCUTS FOR SHUTTER CONTROL                         */
 /************************************************************************/
 
-void open_shutters(uint32_t mask)
+void open_shutters(uint32_t mask, uint32_t what_shutters)
 {
 	if (mask == 0)
-	{
-		mask = 0b1111;
-	}
-	for (uint32_t i = 0; i < 4; ++i)
-	{
-		if (mask & (1 << i))
-		{
-			pins[shutter_pins[i]].set_level(true);
-			pins[shutter_secondary_pins[i]].set_level(true);
-		}
+		mask = 0b1111u;
+
+	if (what_shutters == SHUTTERS_PRIMARY) {
+		for (uint32_t i = 0; i < 4; ++i)
+			if (mask & (1u << i))
+				pins[shutter_pins[i]].set_level(true);
+	} else if (what_shutters == SHUTTERS_SECONDARY) {
+		for (uint32_t i = 0; i < 4; ++i)
+			if (mask & (1u << i))
+				pins[shutter_secondary_pins[i]].set_level(true);
+	} else {
+		for (uint32_t i = 0; i < 4; ++i)
+			if (mask & (1u << i)) {
+				pins[shutter_pins[i]].set_level(true);
+				pins[shutter_secondary_pins[i]].set_level(true);
+			}
 	}
 }
 
-void close_shutters(uint32_t mask)
+void close_shutters(uint32_t mask, uint32_t what_shutters)
 {
 	if (mask == 0)
-	{
-		mask = 0b1111;
-	}
-	for (uint32_t i = 0; i < 4; ++i)
-	{
-		if (mask & (1 << i))
-		{
-			pins[shutter_pins[i]].set_level(false);
-			pins[shutter_secondary_pins[i]].set_level(false);
-		}
+		mask = 0b1111u;
+
+	if (what_shutters == SHUTTERS_PRIMARY) {
+		for (uint32_t i = 0; i < 4; ++i)
+			if (mask & (1u << i))
+				pins[shutter_pins[i]].set_level(false);
+	} else if (what_shutters == SHUTTERS_SECONDARY) {
+		for (uint32_t i = 0; i < 4; ++i)
+			if (mask & (1u << i))
+				pins[shutter_secondary_pins[i]].set_level(false);
+	} else {
+		for (uint32_t i = 0; i < 4; ++i)
+			if (mask & (1u << i)) {
+				pins[shutter_pins[i]].set_level(false);
+				pins[shutter_secondary_pins[i]].set_level(false);
+			}
 	}
 }
 
@@ -93,13 +105,14 @@ uint32_t selected_lasers()
 
 void schedule_shutter_pulse(uint64_t pulse_duration_us,
                             uint64_t timestamp_us, uint32_t N, uint32_t interval_us,
-							bool relative)
+							bool relative, uint32_t what_shutters)
 {
 	uint64_t now_cts = (relative && sys_timer_running) ? current_time_cts() : 0;
 	
 	Event event;
 	event.func = open_shutters_func;
 	event.arg1 = selected_lasers();
+	event.arg2 = what_shutters;
 	event.ts64_cts = us2cts(timestamp_us) + now_cts;
 	event.N = N;
 	event.interv_cts = us2cts(interval_us);
@@ -114,8 +127,12 @@ void schedule_shutter_pulse(uint64_t pulse_duration_us,
 }
 
 // Functions that can be used within event queue
-void open_shutters_func(uint32_t mask, uint32_t){open_shutters(mask);}
-void close_shutters_func(uint32_t mask, uint32_t){close_shutters(mask);}
+void open_shutters_func(uint32_t mask, uint32_t what_shutters){open_shutters(mask, what_shutters);}
+void close_shutters_func(uint32_t mask, uint32_t what_shutters){close_shutters(mask, what_shutters);}
+
+// One-argument wrappers for property system (PropSetter = void (*)(uint32_t))
+void open_shutters_setter(uint32_t mask) { open_shutters(mask, SHUTTERS_BOTH); }
+void close_shutters_setter(uint32_t mask) { close_shutters(mask, SHUTTERS_BOTH); }
 
 
 /************************************************************************/
@@ -214,10 +231,13 @@ void start_stroboscopic_acq(const DataPacket* data) {
     // Calculate burst period: at least exposure time + readout + shutter delay, or the requested interval
     uint32_t frame_duration = find_strobe_frame_duration(p);
     uint32_t burst_period = find_strobe_period(frame_duration, data->interv_us);
-    
-    // Schedule N shutter pulses, each just before the frame starts
-    schedule_shutter_pulse(p.exp, p.start - p.shutter, data->N, burst_period, false);
 
+    // Schedule N pulses for primary shutters (AOTF), each just before the frame starts
+    schedule_shutter_pulse(p.exp, p.start, data->N, burst_period, false, SHUTTERS_PRIMARY);
+
+    // Schedule one long pulse for the duration of acquisition on secondary shutters
+    schedule_shutter_pulse(burst_period*data->N, p.start - p.shutter, 1, 0, false, SHUTTERS_SECONDARY);
+    
     // Schedule N camera pulses
     schedule_camera_strobe(p, p.start, data->N, burst_period);
 }
@@ -230,6 +250,9 @@ void start_ALEX_acq(const DataPacket* data) {
     uint32_t N_ch = _count_set_bits(selected_lasers());
     uint32_t frame_duration = find_strobe_frame_duration(p);
     uint32_t burst_period = find_strobe_period(frame_duration, data->interv_us, N_ch);
+	
+	// Open secondary shutters for duration of acquisition
+	schedule_shutter_pulse(burst_period*data->N, p.start - p.shutter, 1, 0, false, SHUTTERS_SECONDARY);
 
 	// Schedule pulses for each enabled laser
 	for (uint32_t i = 0; i < 4; ++i) {
@@ -238,7 +261,7 @@ void start_ALEX_acq(const DataPacket* data) {
 		    schedule_pulse(
 				pins[shutter_pins[i]].pin_idx, // selected laser
 				p.exp, 				           // pulse duration is the exposure time
-				p.start - p.shutter,           // open shutters just before the frame starts
+				p.start,                       // open shutters just before the frame starts
 				data->N,                       // N pulses for N bursts (times number of lasers)
 				burst_period,                  // once per laser per burst period
 				false);

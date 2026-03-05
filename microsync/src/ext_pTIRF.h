@@ -15,13 +15,22 @@
 #include "uart_comm.h"
 
 /**
+ * @brief type of laser shutters to manipulate - primary or secondary
+ */
+enum ShutterType {
+	SHUTTERS_BOTH = 0,		/**< Apply to both types of laser shutters */
+	SHUTTERS_PRIMARY = 1,    /**< Apply only to primary laser shutters */
+	SHUTTERS_SECONDARY = 2,  /**< Apply only to secondary laser shutters */
+	};
+
+/**
  * @brief Open laser shutters.
  * @param mask Bitmask specifying which shutters to open (0 = all shutters)
  * 
  * Opens the specified laser shutters. If mask is 0, opens all shutters.
  * Each bit in the mask corresponds to a laser: bit 0 = Cy2, bit 1 = Cy3, etc.
  */
-void open_shutters(uint32_t mask = 0);
+void open_shutters(uint32_t mask = 0, uint32_t what_shutters = SHUTTERS_BOTH);
 
 /**
  * @brief Close laser shutters.
@@ -30,7 +39,7 @@ void open_shutters(uint32_t mask = 0);
  * Closes the specified laser shutters. If mask is 0, closes all shutters.
  * Each bit in the mask corresponds to a laser: bit 0 = Cy2, bit 1 = Cy3, etc.
  */
-void close_shutters(uint32_t mask = 0);
+void close_shutters(uint32_t mask = 0, uint32_t what_shutters = SHUTTERS_BOTH);
 
 /**
  * @brief Select which lasers are active.
@@ -57,29 +66,42 @@ uint32_t selected_lasers();
  * @param N Number of pulses to generate
  * @param interval_us Interval between pulses in microseconds
  * @param relative If true, timestamp is relative to current time
+ * @param what_shutters Which shutters to pulse (primary/secondary/both), default SHUTTERS_BOTH
  * 
  * Schedules a series of shutter pulses with the specified parameters.
  * If pulse_duration_us is 0, only opening events are scheduled (shutters stay open).
  */
-void schedule_shutter_pulse(uint64_t pulse_duration_us, uint64_t timestamp_us, uint32_t N, uint32_t interval_us, bool relative);
+void schedule_shutter_pulse(uint64_t pulse_duration_us, uint64_t timestamp_us, uint32_t N, uint32_t interval_us, bool relative, uint32_t what_shutters = SHUTTERS_BOTH);
 
 /**
  * @brief Event function wrapper for opening shutters.
  * @param mask Bitmask specifying which shutters to open
- * @param arg2 Unused parameter (for event function compatibility)
+ * @param what_shutters Which shutters (primary/secondary/both)
  * 
  * Wrapper function that can be used as an event callback to open shutters.
  */
-void open_shutters_func(uint32_t mask, uint32_t arg2);
+void open_shutters_func(uint32_t mask, uint32_t what_shutters);
 
 /**
  * @brief Event function wrapper for closing shutters.
  * @param mask Bitmask specifying which shutters to close
- * @param arg2 Unused parameter (for event function compatibility)
+ * @param what_shutters Which shutters (primary/secondary/both)
  * 
  * Wrapper function that can be used as an event callback to close shutters.
  */
-void close_shutters_func(uint32_t mask, uint32_t arg2);
+void close_shutters_func(uint32_t mask, uint32_t what_shutters);
+
+/**
+ * @brief Property setter for open shutters (single-arg, applies to both primary and secondary).
+ * @param mask Bitmask specifying which shutters to open
+ */
+void open_shutters_setter(uint32_t mask);
+
+/**
+ * @brief Property setter for close shutters (single-arg, applies to both primary and secondary).
+ * @param mask Bitmask specifying which shutters to close
+ */
+void close_shutters_setter(uint32_t mask);
 
 /**
  * @brief Start continuous acquisition mode.
