@@ -27,6 +27,8 @@
 #define CY5_SECONDARY_PIN PIO_PD10_IDX	// D32
 #define CY7_SECONDARY_PIN PIO_PA7_IDX	// D31
 
+#define SECONDARY_SHUTTER_DELAY 5000UL  // delay of the secondary shutters, in us. We assume it's mechanical
+
 const uint32_t shutter_pins[] = { CY2_PIN, CY3_PIN, CY5_PIN, CY7_PIN };
 const uint32_t shutter_secondary_pins[] = { CY2_SECONDARY_PIN, CY3_SECONDARY_PIN, CY5_SECONDARY_PIN, CY7_SECONDARY_PIN };
 

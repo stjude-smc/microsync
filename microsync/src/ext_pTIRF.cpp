@@ -151,6 +151,7 @@ struct AcqParams {
 		shutter = std::max(1UL, get_property(rw_SHUTTER_DELAY_us));
 		// Calculate earliest possible start time (can't be in the past!)
 		uint64_t earliest_start = std::max((uint64_t)readout, (uint64_t)shutter);  // either ASAP
+		earliest_start = std::max(earliest_start,  (uint64_t)SECONDARY_SHUTTER_DELAY);
 		uint64_t requested_start = (uint64_t)data->ts_us;                           // or at requested timestamp
 		start = std::max(earliest_start, requested_start) + current_time_us() + UNIFORM_TIME_DELAY;
 	}
@@ -233,10 +234,10 @@ void start_stroboscopic_acq(const DataPacket* data) {
     uint32_t burst_period = find_strobe_period(frame_duration, data->interv_us);
 
     // Schedule N pulses for primary shutters (AOTF), each just before the frame starts
-    schedule_shutter_pulse(p.exp, p.start, data->N, burst_period, false, SHUTTERS_PRIMARY);
+    schedule_shutter_pulse(p.exp, p.start - p.shutter, data->N, burst_period, false, SHUTTERS_PRIMARY);
 
     // Schedule one long pulse for the duration of acquisition on secondary shutters
-    schedule_shutter_pulse(burst_period*data->N, p.start - p.shutter, 1, 0, false, SHUTTERS_SECONDARY);
+    schedule_shutter_pulse(burst_period*data->N, p.start - SECONDARY_SHUTTER_DELAY, 1, 0, false, SHUTTERS_SECONDARY);
     
     // Schedule N camera pulses
     schedule_camera_strobe(p, p.start, data->N, burst_period);
@@ -252,7 +253,7 @@ void start_ALEX_acq(const DataPacket* data) {
     uint32_t burst_period = find_strobe_period(frame_duration, data->interv_us, N_ch);
 	
 	// Open secondary shutters for duration of acquisition
-	schedule_shutter_pulse(burst_period*data->N, p.start - p.shutter, 1, 0, false, SHUTTERS_SECONDARY);
+	schedule_shutter_pulse(burst_period*data->N, p.start - SECONDARY_SHUTTER_DELAY, 1, 0, false, SHUTTERS_SECONDARY);
 
 	// Schedule pulses for each enabled laser
 	for (uint32_t i = 0; i < 4; ++i) {
@@ -261,7 +262,7 @@ void start_ALEX_acq(const DataPacket* data) {
 		    schedule_pulse(
 				pins[shutter_pins[i]].pin_idx, // selected laser
 				p.exp, 				           // pulse duration is the exposure time
-				p.start,                       // open shutters just before the frame starts
+				p.start - p.shutter,           // open shutters just before the frame starts
 				data->N,                       // N pulses for N bursts (times number of lasers)
 				burst_period,                  // once per laser per burst period
 				false);
