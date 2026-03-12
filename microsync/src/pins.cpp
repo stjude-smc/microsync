@@ -193,6 +193,10 @@ void Pin::set_level(bool level)
 		case CY3_PIN:
 		case CY5_PIN:
 		case CY7_PIN:
+		case CY2_SECONDARY_PIN:
+		case CY3_SECONDARY_PIN:
+		case CY5_SECONDARY_PIN:
+		case CY7_SECONDARY_PIN:
 			ioport_set_pin_level(this->pin_idx, lasers_enabled * this->active * level);
 			break;
 		default:

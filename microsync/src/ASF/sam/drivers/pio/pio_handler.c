@@ -156,7 +156,8 @@ uint32_t pio_handler_set(Pio *p_pio, uint32_t ul_id, uint32_t ul_mask,
 	pSource->mask = ul_mask;
 	pSource->attr = ul_attr;
 	pSource->handler = p_handler;
-	if (i == gs_ul_nb_sources + 1) {
+	/* Increment count when using a new slot (fix: was i == gs_ul_nb_sources + 1, so first registration never incremented) */
+	if (i >= gs_ul_nb_sources) {
 		gs_ul_nb_sources++;
 	}
 

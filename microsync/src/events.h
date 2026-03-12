@@ -235,6 +235,14 @@ void start_sys_timer();
 void stop_sys_timer();
 
 /**
+ * @brief Clear the event queue, stop burst, and reset pins to default state.
+ *
+ * Stops burst output, swaps the event queue empty, turns off the error LED,
+ * and reinitializes all pins. Does not stop the system timer.
+ */
+void clear_event_queue_and_reset_pins(void);
+
+/**
  * @brief Pause the system timer.
  * 
  * Temporarily stops the system timer without clearing the event queue.

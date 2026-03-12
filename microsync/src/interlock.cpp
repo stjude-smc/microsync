@@ -18,18 +18,7 @@ volatile bool intlck_match_2 = false;
 /** @brief Global laser enable/disable state */
 volatile bool lasers_enabled = true;
 
-/** @brief Cy2 laser active state */
-volatile bool cy2_active = true;
-
-/** @brief Cy3 laser active state */
-volatile bool cy3_active = true;
-
-/** @brief Cy5 laser active state */
-volatile bool cy5_active = true;
-
-/** @brief Cy7 laser active state */
-volatile bool cy7_active = true;
-
+/** @brief Interlock system enabled state */
 bool interlock_enabled = true;
 
 /**
@@ -76,10 +65,11 @@ void enable_lasers()
 	lasers_enabled = true;
 
     // Update pin state to reflect the interlock state
-    pins[CY2_PIN].update();
-    pins[CY3_PIN].update();
-    pins[CY5_PIN].update();
-    pins[CY7_PIN].update();
+    for (uint32_t i = 0; i < 4; ++i)
+    {
+        pins[shutter_pins[i]].update();
+        pins[shutter_secondary_pins[i]].update();
+    }
 }
 
 
@@ -88,10 +78,11 @@ void disable_lasers()
 	lasers_enabled = false;
 
     // Update pin state to reflect the interlock state
-    pins[CY2_PIN].update();
-    pins[CY3_PIN].update();
-    pins[CY5_PIN].update();
-    pins[CY7_PIN].update();
+    for (uint32_t i = 0; i < 4; ++i)
+    {
+        pins[shutter_pins[i]].update();
+        pins[shutter_secondary_pins[i]].update();
+    }
 }
 
 
