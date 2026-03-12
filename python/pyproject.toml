@@ -45,6 +45,15 @@ dev = [
     "sphinx>=4.0",
     "sphinx-rtd-theme>=1.0",
 ]
+viz = [
+    "bokeh>=3.0.0",
+    "selenium>=4.0.0",
+    "webdriver-manager>=4.0.0",
+]
+jitter = [
+    "numpy",
+    "pandas",
+]
 
 [project.urls]
 Homepage = "https://github.com/stjude-smc/microsync"

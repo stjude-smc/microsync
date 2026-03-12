@@ -3,12 +3,22 @@ Interactive event visualization using Bokeh.
 
 This module provides the EventVisualizer class for creating interactive
 timeline visualizations of scheduled events from the sync device.
+
+This module is optional and requires the `viz` extra:
+
+    pip install "microsync[viz]"
 """
 
-import bokeh.plotting as bk
-from bokeh.models import ColumnDataSource, HoverTool, BoxAnnotation
-from bokeh.layouts import column
-from bokeh.io import output_notebook
+try:
+    import bokeh.plotting as bk
+    from bokeh.models import ColumnDataSource, HoverTool, BoxAnnotation
+    from bokeh.layouts import column
+    from bokeh.io import output_notebook
+except ImportError as exc:
+    raise ImportError(
+        "microsync.event_visualizer requires the 'viz' extra. "
+        "Install with: pip install \"microsync[viz]\""
+    ) from exc
 from collections import defaultdict
 from itertools import chain
 import re

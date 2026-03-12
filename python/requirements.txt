@@ -1,7 +1,1 @@
-# Core dependencies for microsync package
 pyserial>=3.0
-
-# Visualization dependencies
-bokeh>=3.0.0
-selenium>=4.0.0
-webdriver-manager>=4.0.0 

@@ -1,7 +1,14 @@
 import re
 import time
-import numpy as np
-import pandas as pd
+
+try:
+    import numpy as np
+    import pandas as pd
+except ImportError as exc:
+    raise ImportError(
+        "microsync.tektronix requires the 'jitter' extra. "
+        "Install with: pip install \"microsync[jitter]\""
+    ) from exc
 
 class _Channel:
     def __init__(self, parent, idx):
