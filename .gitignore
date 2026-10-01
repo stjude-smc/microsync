@@ -17,7 +17,7 @@ release_artifacts/
 *.sav
 
 # Ignore IDE-specific files and folders
-# .vscode/  # IntelliSense settings for Cursor IDE
+# .vscode/  # IntelliSense setting for Cursor IDE
 *.atsuo
 *.suo
 *.user
