@@ -6,7 +6,7 @@ bin/
 build/
 python/dist/
 release_artifacts/
-
+# test
 # Ignore generated files from the build process
 *.elf
 *.hex
